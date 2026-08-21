@@ -246,6 +246,27 @@ class Bank_model extends CI_Model
         $this->db->trans_complete(); return $this->db->trans_status();
     }
 
+    public function pay_loan($loan_id, $user_id, $account_id)
+    {
+        $loan=$this->db->where(array('id'=>(int)$loan_id,'user_id'=>$user_id))->get('loans')->row_array();
+        if(!$loan || $loan['status']!=='active')return array(FALSE,'The loan is not available for payment.');
+        $account=$this->account((int)$account_id,$user_id);
+        if(!$account || $account['status']!=='active')return array(FALSE,'The selected account is unavailable.');
+        $amount=min((float)$loan['monthly_payment'],(float)$loan['outstanding_balance']);
+        if($amount<=0)return array(FALSE,'The loan is already fully repaid.');
+        if($amount>(float)$account['available_balance'])return array(FALSE,'Insufficient available balance for this payment.');
+        $now=date('Y-m-d H:i:s');$reference='LN-PAY-'.date('ymd').'-'.random_int(10000,99999);
+        $new_balance=max(0,round((float)$loan['outstanding_balance']-$amount,2));
+        $remaining=max(0,(int)$loan['payments_remaining']-1);
+        $status=$new_balance<=0?'paid':'active';
+        $this->db->trans_start();
+        $this->db->where('id',$account['id'])->set('balance','balance-'.$amount,FALSE)->set('available_balance','available_balance-'.$amount,FALSE)->update('accounts');
+        $this->db->where('id',$loan['id'])->update('loans',array('outstanding_balance'=>$new_balance,'payments_remaining'=>$remaining,'status'=>$status,'updated_at'=>$now));
+        $this->db->insert('transactions',array('account_id'=>$account['id'],'reference'=>$reference,'type'=>'debit','category'=>'Loan payment','description'=>'Loan payment '.$loan['reference'],'amount'=>$amount,'currency'=>$account['currency'],'balance_after'=>(float)$account['available_balance']-$amount,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'The loan payment could not be processed.');
+    }
+
     public function create_loan($user_id, $data)
     {
         $amount=round((float)$data['amount'],2);
