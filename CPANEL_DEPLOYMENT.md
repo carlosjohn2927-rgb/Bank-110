@@ -14,11 +14,10 @@ This package is designed for deployment without Terminal, SSH, Composer, Node.js
 
 1. Open **cPanel → File Manager**.
 2. Open the domain's document root, normally `public_html`, or the document root assigned to a subdomain.
-3. Upload `application-deployment.zip`.
-4. Select the ZIP and click **Extract**.
-5. Ensure `index.php`, `.htaccess`, `.env`, `application`, `system`, `assets`, `public`, and `database` are directly inside the domain's document root—not inside an extra nested folder.
-6. After extraction succeeds, delete the uploaded ZIP from the public website folder using File Manager.
-7. In File Manager settings, enable **Show Hidden Files (dotfiles)** so `.env` and `.htaccess` are visible.
+3. Upload the project folder contents (everything in the repository, including `index.php`, `.htaccess`, `.env`, `application`, `system`, `assets`, `public`, `database`, and `src`).
+4. Move/place the files so `index.php`, `.htaccess`, `.env`, `application`, `system`, `assets`, `public`, and `database` are directly inside the domain's document root—not inside an extra nested folder.
+5. Ensure the top-level files are directly in the document root.
+6. In File Manager settings, enable **Show Hidden Files (dotfiles)** so `.env` and `.htaccess` are visible.
 
 No dependency installation is needed. CodeIgniter and all production assets are included.
 

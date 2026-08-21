@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(190) NOT NULL UNIQUE,
  password_hash VARCHAR(255) NOT NULL, first_name VARCHAR(80) NOT NULL, last_name VARCHAR(80) NOT NULL,
  role ENUM('customer','admin') NOT NULL DEFAULT 'customer', status ENUM('active','pending','suspended','closed') NOT NULL DEFAULT 'active',
+ twofa_enabled TINYINT(1) NOT NULL DEFAULT 0,
  last_login_at DATETIME NULL, last_login_ip VARCHAR(45) NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
  INDEX idx_users_role_status(role,status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS beneficiaries (
 
 CREATE TABLE IF NOT EXISTS transfers (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, reference VARCHAR(40) NOT NULL UNIQUE, user_id BIGINT UNSIGNED NOT NULL, from_account_id BIGINT UNSIGNED NOT NULL, beneficiary_id BIGINT UNSIGNED NULL,
- recipient_name VARCHAR(120) NOT NULL, recipient_account VARCHAR(60) NOT NULL, recipient_bank VARCHAR(120) NOT NULL, transfer_type ENUM('internal','domestic','international') NOT NULL,
+ recipient_name VARCHAR(120) NOT NULL, recipient_account VARCHAR(60) NOT NULL, recipient_bank VARCHAR(120) NOT NULL, recipient_routing VARCHAR(60) NULL, transfer_type ENUM('internal','domestic','international') NOT NULL,
  amount DECIMAL(18,2) NOT NULL, currency CHAR(3) NOT NULL, fee DECIMAL(18,2) NOT NULL DEFAULT 0, note VARCHAR(255), scheduled_for DATE NOT NULL,
  status ENUM('pending','processing','completed','failed','cancelled') NOT NULL DEFAULT 'pending', approved_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
  INDEX idx_transfer_user(user_id), INDEX idx_transfer_status(status), CONSTRAINT fk_transfer_user FOREIGN KEY(user_id) REFERENCES users(id),
@@ -91,6 +92,32 @@ CREATE TABLE IF NOT EXISTS audit_logs (
  ip_address VARCHAR(45), user_agent VARCHAR(255), created_at DATETIME NOT NULL, INDEX idx_audit_user(user_id), INDEX idx_audit_date(created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS user_preferences (
+ user_id BIGINT UNSIGNED NOT NULL, pref_key VARCHAR(80) NOT NULL, pref_value VARCHAR(255) NULL, updated_at DATETIME NOT NULL,
+ PRIMARY KEY(user_id,pref_key), CONSTRAINT fk_pref_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS login_attempts (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, attempt_key VARCHAR(190) NOT NULL, success TINYINT(1) NOT NULL DEFAULT 0, ip_address VARCHAR(45) NULL, created_at DATETIME NOT NULL,
+ INDEX idx_attempt_key(attempt_key,created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_notifications (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, type VARCHAR(40) NOT NULL DEFAULT 'general', title VARCHAR(190) NOT NULL,
+ body VARCHAR(500) NULL, link VARCHAR(190) NULL, is_read TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+ INDEX idx_notif_user(user_id), INDEX idx_notif_unread(user_id,is_read), CONSTRAINT fk_notif_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS exchange_rates (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, from_currency CHAR(3) NOT NULL, to_currency CHAR(3) NOT NULL, rate DECIMAL(20,10) NOT NULL,
+ updated_at DATETIME NOT NULL, UNIQUE KEY uq_pair(from_currency,to_currency)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS password_resets (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at DATETIME NOT NULL, used TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+ INDEX idx_reset_user(user_id), INDEX idx_reset_token(token), CONSTRAINT fk_reset_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS=1;
 
 CREATE TABLE IF NOT EXISTS roles (
@@ -112,6 +139,16 @@ CREATE TABLE IF NOT EXISTS notification_templates (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, template_key VARCHAR(100) NOT NULL UNIQUE, channel ENUM('email','sms','system') NOT NULL, subject VARCHAR(190), body TEXT NOT NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SET NAMES utf8mb4;
+
+-- Add recipient_routing column to transfers if missing (safe for existing installs).
+SET @has_routing := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='transfers' AND column_name='recipient_routing');
+SET @ddl2 := IF(@has_routing = 0, 'ALTER TABLE transfers ADD COLUMN recipient_routing VARCHAR(60) NULL AFTER recipient_bank', 'SELECT 1');
+PREPARE stmt2 FROM @ddl2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
+
+-- Add twofa_enabled column to users if missing (safe for existing installs).
+SET @has_twofa := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='users' AND column_name='twofa_enabled');
+SET @ddl := IF(@has_twofa = 0, 'ALTER TABLE users ADD COLUMN twofa_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER status', 'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 INSERT INTO users (id,username,email,password_hash,first_name,last_name,role,status,created_at,updated_at) VALUES
 (1,'northadmin','admin@northwest.financeltd.org','$2y$12$EltRBU5UuWsjluAHadTdPuyrSTUJLMKLUGH2X8HugEknRLIlhZGYe','North','Admin','admin','active',NOW(),NOW()),
@@ -186,7 +223,18 @@ INSERT INTO notification_templates(template_key,channel,subject,body,is_active,c
 ('ticket_reply','email','Update on support request {{reference}}','NorthWest support has replied to your request.',1,NOW(),NOW())
 ON DUPLICATE KEY UPDATE subject=VALUES(subject),body=VALUES(body);
 INSERT INTO settings(setting_key,setting_value,updated_at) VALUES
-('application_initialized','1',NOW()),('schema_version','2026.08.21',NOW()),('timezone','UTC',NOW()),('maintenance_mode','0',NOW()),('registration_enabled','0',NOW()),('supported_currencies','USD,EUR,GBP',NOW())
+('application_initialized','1',NOW()),('schema_version','2026.08.21',NOW()),('timezone','UTC',NOW()),('maintenance_mode','0',NOW()),('registration_enabled','0',NOW()),('supported_currencies','USD,EUR,GBP',NOW()),
+('announcement_text','Welcome to NorthWest — Secure online banking with 256-bit encryption · Free NorthWest-to-NorthWest transfers · 24/7 support',NOW()),
+('seo_site_name','NorthWest Financial',NOW()),('seo_title','NorthWest Financial — Secure Online Banking',NOW()),
+('seo_description','Simple, secure online banking. Send money, manage cards, apply for loans and track your finances — all in one protected place with 256-bit encryption.',NOW()),
+('seo_keywords','online banking, secure banking, bank transfers, digital bank, NorthWest, personal accounts, savings, loans',NOW()),
+('routing_number','021000021',NOW()),('international_fee_percent','1.5',NOW()),('international_fee_flat','0',NOW())
 ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value),updated_at=VALUES(updated_at);
+
+INSERT INTO exchange_rates (from_currency,to_currency,rate,updated_at) VALUES
+('USD','EUR','0.9200',NOW()),('USD','GBP','0.7900',NOW()),
+('EUR','USD','1.0870',NOW()),('EUR','GBP','0.8590',NOW()),
+('GBP','USD','1.2660',NOW()),('GBP','EUR','1.1640',NOW())
+ON DUPLICATE KEY UPDATE rate=VALUES(rate),updated_at=VALUES(updated_at);
 
 COMMIT;

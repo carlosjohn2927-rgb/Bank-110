@@ -2,3 +2,275 @@
 @media(max-width:1050px){.auth{grid-template-columns:1fr}.auth-image{display:none!important}.auth>section{min-height:100vh}.grid.two{grid-template-columns:1fr}.stats.four{grid-template-columns:repeat(2,1fr)}.account-grid{grid-template-columns:repeat(2,1fr)}.account-grid .add-card{grid-column:1/-1}.help-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:780px){.shell>aside{transform:translateX(-100%);transition:.25s}.shell>aside.open{transform:none}.shell>main{margin-left:0}.menu{display:block;margin-right:10px}.shell main>header{padding:0 15px}.search{width:auto;flex:1}.head-user>div{display:none}.page{padding:22px 15px}.page-title{align-items:flex-start;flex-direction:column}.balance{grid-template-columns:1fr}.balance-account{margin-top:0}.quick{grid-template-columns:1fr 1fr}.account-grid,.card-grid,.transfer-grid,.settings-grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr;gap:20px}.summary>div{padding:0;border:0}.help-grid{grid-template-columns:1fr 1fr}.loan-hero{grid-template-columns:1fr}.loan-hero>div+div{border:0;border-top:1px solid #ffffff22;padding:20px 0 0;margin-top:20px}.tutorial-grid{grid-template-columns:1fr}}@media(max-width:520px){.auth>section{padding:25px 20px}.auth-card h1{font-size:28px}.quick,.stats,.stats.four,.help-grid{grid-template-columns:1fr}.balance>div:first-child{padding:27px 23px}.balance h2{font-size:31px}.spending{grid-template-columns:1fr}.spending ul{padding:0 35px 20px}.account-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.bank-card{padding:19px}.bank-card h3{font-size:14px}.tutorial-hero>i,.offer>i{display:none}}
 .admin-actions{padding:20px;margin-bottom:18px;display:grid;grid-template-columns:.65fr 1.35fr;gap:25px}.admin-actions h3{font:700 14px Manrope;margin:0 0 10px}.inline-controls{display:flex;gap:8px}.inline-controls input,.inline-controls select{height:40px;min-width:0}.inline-controls button{white-space:nowrap}.conversation{padding:25px}.message{max-width:75%;background:#f5f8fc;border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:14px}.message.staff{margin-left:auto;background:#edf5ff;border-color:#d6e7fb}.message header{display:flex;flex-direction:column}.message header small{font-size:9px;color:#8190a1;margin-top:3px}.message p{font-size:11px;line-height:1.6;margin-bottom:0}.reply-form{border-top:1px solid var(--line);margin-top:25px;padding-top:10px}.reply-form form>div{display:flex;gap:10px;margin-top:10px}.reply-form select{max-width:220px}.reply-form .btn{margin-left:auto}@media(max-width:780px){.admin-actions{grid-template-columns:1fr}.inline-controls{flex-wrap:wrap}.inline-controls>*{flex:1}.message{max-width:95%}}
 .avatar-image{object-fit:cover;display:block}.file-button{margin:0!important;position:relative;overflow:hidden;cursor:pointer}.file-button input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+/* ============================================================
+   Moving Announcement Bar — black text on a white background.
+   Rendered at the very top of every page (site-wide).
+   ============================================================ */
+.announcement{width:100%;height:34px;background:#ffffff;color:#111111;border-bottom:1px solid #ececf0;overflow:hidden;position:relative;z-index:40;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.announcement__track{display:flex;align-items:center;height:34px;width:max-content;animation:announce-scroll 30s linear infinite;will-change:transform}
+.announcement:hover .announcement__track,.announcement:focus-within .announcement__track{animation-play-state:paused}
+.announcement__group{display:flex;align-items:center;white-space:nowrap;min-width:100vw}
+.announcement__item{display:inline-block;padding:8px 26px;font-size:12.5px;font-weight:600;letter-spacing:.15px;color:#0a0a0a;line-height:1}
+.auth>.announcement{grid-column:1/-1}
+.shell>aside{top:34px;height:calc(100vh - 34px)}
+@keyframes announce-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.announcement__track{animation:none}}
+
+/* ============================================================
+   In-Site Operating AI Assistant — chat widget
+   ============================================================ */
+.chat-widget{position:fixed;right:22px;bottom:22px;z-index:1200;font-family:'DM Sans',sans-serif}
+.chat-widget__fab{display:flex;align-items:center;gap:10px;border:0;border-radius:999px;padding:0 20px 0 6px;height:56px;background:linear-gradient(120deg,#0b3f7e,#1468e5);color:#fff;cursor:pointer;box-shadow:0 12px 28px rgba(10,72,180,.35);font-weight:700;font-size:13px;transition:transform .2s,box-shadow .2s;position:relative}
+.chat-widget__fab:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(10,72,180,.42)}
+.chat-widget__fab-icon{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;flex:none}
+.chat-widget__dot{position:absolute;top:6px;right:8px;width:10px;height:10px;border-radius:50%;background:#35e09a;border:2px solid #1468e5}
+.chat-widget__label{font-size:13px}
+.chat-widget__panel{position:absolute;right:0;bottom:68px;width:min(92vw,382px);height:min(78vh,560px);background:#fff;border:1px solid #e6ebf2;border-radius:18px;box-shadow:0 24px 60px rgba(15,40,80,.28);display:flex;flex-direction:column;overflow:hidden;animation:chat-pop .22s ease}
+@keyframes chat-pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.chat-widget__head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(120deg,#08213f,#0e4d8f);color:#fff}
+.chat-widget__avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;display:block;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.chat-widget__meta{display:flex;flex-direction:column;line-height:1.25}
+.chat-widget__meta b{font-size:13px;font-weight:700}
+.chat-widget__meta small{font-size:10.5px;color:#b9d3ec;display:flex;align-items:center;gap:5px}
+.chat-widget__online{width:7px;height:7px;border-radius:50%;background:#35e09a;display:inline-block;box-shadow:0 0 0 3px rgba(53,224,154,.2)}
+.chat-widget__close{margin-left:auto;background:rgba(255,255,255,.12);border:0;color:#fff;width:30px;height:30px;border-radius:8px;font-size:17px;cursor:pointer}
+.chat-widget__close:hover{background:rgba(255,255,255,.24)}
+.chat-widget__body{flex:1;overflow-y:auto;padding:16px 14px;background:#f7f9fc}
+.chat-widget__messages{display:flex;flex-direction:column;gap:10px}
+.chat-msg{display:flex;max-width:84%}
+.chat-msg.user{align-self:flex-end}
+.chat-msg.assistant{align-self:flex-start}
+.chat-bubble{padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word}
+.chat-msg.user .chat-bubble{background:linear-gradient(120deg,#0d4f95,#1468e5);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.assistant .chat-bubble{background:#fff;color:#25344a;border:1px solid #e7ecf3;border-bottom-left-radius:4px;box-shadow:0 2px 6px rgba(20,45,80,.05)}
+.chat-msg.typing .chat-bubble{display:flex;gap:4px;align-items:center;padding:14px}
+.chat-msg.typing i{width:7px;height:7px;border-radius:50%;background:#9db3cb;animation:chat-blink 1.2s infinite}
+.chat-msg.typing i:nth-child(2){animation-delay:.2s}
+.chat-msg.typing i:nth-child(3){animation-delay:.4s}
+@keyframes chat-blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.chat-actions{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 4px}
+.chat-actions a{font-size:12px;font-weight:700;color:#1468e5;background:#eaf2ff;border:1px solid #d4e5fb;padding:7px 12px;border-radius:8px;text-decoration:none}
+.chat-actions a:hover{background:#dfecff}
+.chat-widget__quick{display:flex;flex-wrap:wrap;gap:7px;padding:10px 14px 4px;border-top:1px solid #eef1f6}
+.chat-chip{border:1px solid #dbe6f3;background:#fff;color:#0f5bc0;font-size:12px;font-weight:600;padding:7px 11px;border-radius:999px;cursor:pointer;transition:.15s}
+.chat-chip:hover{background:#eaf2ff;border-color:#bcd6f6}
+.chat-widget__form{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #eef1f6}
+.chat-widget__input{flex:1;height:42px;border:1px solid #dbe4ee;border-radius:10px;padding:0 13px;font-size:13px;outline:none}
+.chat-widget__input:focus{border-color:#1468e5;box-shadow:0 0 0 3px rgba(20,104,229,.14)}
+.chat-widget__send{width:42px;height:42px;border:0;border-radius:10px;background:linear-gradient(120deg,#0d4f95,#1468e5);color:#fff;font-size:16px;cursor:pointer;transition:.15s}
+.chat-widget__send:hover{filter:brightness(1.08)}
+.chat-widget__note{margin:0;padding:8px 14px 12px;font-size:10px;color:#98a5b6;text-align:center;border-top:1px dashed #eef1f6}
+@media (max-width:520px){.chat-widget{right:14px;bottom:14px}.chat-widget__panel{right:-8px;bottom:64px;width:min(96vw,382px)}}
+
+/* ============================================================
+   Admin settings tabs
+   ============================================================ */
+.settings-nav a{cursor:pointer;border:0;background:none;width:100%;text-align:left}
+.tab{display:none}
+.tab.active{display:block;animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.field-hint{display:block;color:#8a98aa;font-size:10.5px;margin-top:5px}
+.seo-preview{margin-top:14px;font-size:11px;color:#5d6d7f;background:#f3f7fb;border:1px dashed #cfe0f0;padding:10px 12px;border-radius:8px}
+.seo-preview code{color:#0f5bc0;background:#e7f0fc;padding:1px 5px;border-radius:4px}
+.settings-form textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font:14px 'DM Sans';min-height:74px;background:#fff}
+
+/* ============================================================
+   Design polish — refined, modern, premium feel
+   ============================================================ */
+:root{--navy:#081b33;--blue:#1468e5;--blue-2:#0d4f95;--green:#15a36a;--bg:#eef3f9;--ink:#17263a;--muted:#718095;--line:#e3eaf2;--radius:14px}
+body{background:linear-gradient(180deg,#f3f6fb,#e9eff7);color:var(--ink)}
+.shell>aside{background:linear-gradient(180deg,#0a1f3a,#0b2a52 60%,#0a1f3a)}
+.brand>i b{background:linear-gradient(180deg,#2f8bff,#0e5fd8)}
+.shell nav a:hover,.shell nav a.active{background:linear-gradient(90deg,rgba(20,104,229,.18),rgba(20,104,229,.04));color:#fff}
+.shell nav a.active{box-shadow:inset 3px 0 #2f8bff}
+.btn{background:linear-gradient(120deg,#0d5fd8,#1468e5);box-shadow:0 8px 18px rgba(20,104,229,.28);transition:transform .15s,box-shadow .15s,filter .15s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 12px 24px rgba(20,104,229,.34)}
+.shell main>header{background:rgba(255,255,255,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.search{background:#f2f5f9;border:1px solid transparent;transition:.15s}
+.search:focus-within{border-color:#c9dcf5;background:#fff;box-shadow:0 0 0 3px rgba(20,104,229,.1)}
+.avatar{background:linear-gradient(120deg,#dbeafe,#cfe5ff);border:1px solid #c3dcfa}
+.panel{border-radius:var(--radius);box-shadow:0 3px 16px rgba(22,45,80,.05)}
+.panel:hover{box-shadow:0 6px 24px rgba(22,45,80,.08)}
+.balance{background:linear-gradient(120deg,#081f3d,#0f4a86 55%,#1468c9);box-shadow:0 18px 40px rgba(9,40,90,.28);border-radius:16px}
+.account-card{box-shadow:0 14px 30px rgba(11,46,79,.22)}
+.quick a{transition:transform .15s,box-shadow .15s,border-color .15s}
+.quick a:hover{transform:translateY(-2px);border-color:#bcd3ef;box-shadow:0 8px 18px rgba(20,104,229,.10)}
+input,select,textarea{transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1468e5;box-shadow:0 0 0 3px rgba(20,104,229,.12)}
+.page{animation:fadein .3s ease}
+.auth-card h1{background:linear-gradient(100deg,#0a1f3a,#1468e5);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.auth-card .btn{box-shadow:0 12px 26px rgba(20,104,229,.35)}
+.insight{background:linear-gradient(100deg,#eef6ff,#fff)}
+.status{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:4px 9px;border-radius:999px}
+@media (prefers-reduced-motion:reduce){.page{animation:none}.btn,.quick a{transition:none}}
+
+/* Forgot password link */
+.forgot-link{display:block;margin-top:14px;text-align:center;font-size:12px;color:#1468e5;font-weight:700}
+.forgot-link:hover{text-decoration:underline}
+
+/* Preference rows (customer settings) */
+.pref-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.pref-row>span{display:flex;flex-direction:column}
+.pref-row b{font-size:13px}
+.pref-row small{font-size:11px;color:#8493a4;margin-top:3px}
+.pref-row input[type="checkbox"]{width:20px;height:20px;accent-color:#1468e5;cursor:pointer}
+.secure-badge{font-style:normal;width:46px;height:46px;border-radius:50%;background:#e5f6ef;color:#168059;display:grid;place-items:center;font-size:20px;flex:none}
+
+/* Notifications bell dropdown */
+.bell-wrap{position:relative}
+.bell-drop{position:absolute;right:0;top:48px;width:300px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 40px rgba(15,40,80,.16);overflow:hidden;z-index:50;animation:fadein .18s ease}
+.bell-head{padding:13px 15px;font-weight:800;font-size:13px;border-bottom:1px solid #eef1f5;background:#f7f9fc}
+.bell-list{max-height:320px;overflow-y:auto}
+.bell-list a{display:flex;flex-direction:column;gap:2px;padding:12px 15px;border-bottom:1px solid #f0f3f7;transition:background .12s}
+.bell-list a:hover{background:#f5f8fc}
+.bell-list a b{font-size:13px}
+.bell-list a span{font-size:12px;color:#48566a;line-height:1.4}
+.bell-list a small{font-size:10px;color:#98a5b6}
+.bell-empty{padding:22px;text-align:center;color:#98a5b6;font-size:12px}
+
+/* Transfer type tabs (clickable) */
+.tabs b,.tabs span{cursor:pointer;height:59px;display:flex;align-items:center}
+.tabs span{color:#7e8c9c}
+.tabs span:hover{color:#1468e5}
+.tabs b.active,.tabs span.active{color:#1468e5;border-bottom:2px solid #1468e5}
+
+/* KYC badges & status */
+.kyc-badge{font-size:10px;font-weight:800;letter-spacing:.4px;padding:5px 10px;border-radius:999px;text-transform:uppercase}
+.kyc-pending{background:#fff3d6;color:#b77800}
+.kyc-verified{background:#e5f6ef;color:#168059}
+.kyc-rejected{background:#ffebee;color:#c53d4d}
+.kyc-status{display:flex;align-items:center;gap:13px;padding:18px 0;border-bottom:1px solid var(--line);margin-bottom:18px}
+.kyc-status>div{display:flex;flex-direction:column}
+.kyc-status b{font-size:13px}
+.kyc-status small{font-size:11px;color:#8493a4;margin-top:3px}
+
+/* Registration link on login */
+.register-link{margin-top:14px;text-align:center;font-size:12px;color:#7e8c9c}
+.register-link a{color:#1468e5;font-weight:700}
+.register-link a:hover{text-decoration:underline}
+
+/* Tutorial guide dialogs */
+.guide-body{font-size:13px;line-height:1.65;color:#3d4d61;padding:0 4px}
+.guide-body ul{margin:10px 0 0;padding-left:20px}
+.guide-body li{margin:7px 0}
+.guide-body code{background:#eef3f9;padding:2px 6px;border-radius:5px;color:#0f5bc0}
+dialog{width:min(560px,92vw);border:1px solid var(--line);border-radius:14px;padding:0;box-shadow:0 24px 60px rgba(15,40,80,.25)}
+dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
+.dialog-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #eef1f5}
+.dialog-head h2{margin:0;font:700 17px Manrope}
+.dialog-head button{border:0;background:#f2f5f9;width:30px;height:30px;border-radius:8px;font-size:17px;cursor:pointer}
+
+/* Ticket list rows as links + row arrow */
+.list a.list-row{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #eef2f5;transition:background .12s}
+.list a.list-row:hover{background:#f5f8fc}
+.row-arrow{color:#c3cdda;font-size:20px}
+
+/* Audit log table */
+.audit-table .muted-ip{color:#9aa7b6;font-size:11px}
+.audit-table strong{font-size:11px;font-weight:700}
+
+/* Account card actions + details reveal */
+.card-actions{display:flex;gap:8px;margin-top:14px}
+.card-actions .btn{padding:8px 12px;font-size:11px;background:#ffffff1a;box-shadow:none;border:1px solid #ffffff26}
+.card-actions .btn:hover{background:#ffffff2b}
+.acc-details{display:flex;flex-direction:column}
+.acc-detail-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid #eef1f5}
+.acc-detail-row small{font-size:9px;letter-spacing:1.2px;color:#8492a3;font-weight:800}
+.acc-detail-row b{font:700 15px Manrope;color:#17263a;letter-spacing:.5px}
+.reveal-wrap{display:flex;align-items:center;gap:10px}
+.reveal-hidden{letter-spacing:3px;color:#9aa7b6!important}
+.reveal-btn{border:0;background:#eaf2ff;color:#1468e5;font-size:11px;font-weight:700;padding:6px 10px;border-radius:7px;cursor:pointer}
+
+/* Exchange page */
+.fx-preview{margin-top:14px;padding:13px 15px;background:#eef6ff;border:1px solid #d4e5fb;border-radius:9px;font-size:13px;color:#17263a}
+.fx-preview b{color:#1468e5}
+.fx-preview.warn{background:#fff3d6;border-color:#f0dfb0;color:#8a6d1f}
+.fx-rates{list-style:none;margin:14px 0 0;padding:0}
+.fx-rates li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eef1f5;font-size:12px}
+.fx-rates li b{font-size:12px}
+.fx-rates li span{font-weight:700;color:#1468e5}
+
+/* Admin exchange rate form */
+.fx-rate-form{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.fx-rate-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.fx-rate-row label{font-size:13px;font-weight:700;color:#17263a;min-width:110px}
+.fx-rate-row input{max-width:180px;text-align:right}
+
+/* Language switcher */
+.lang-switch{display:flex;align-items:center;gap:6px;margin-right:8px}
+.lang-switch select{border:1px solid var(--line);border-radius:8px;height:34px;padding:0 8px;background:#fff;font-size:12px;color:#17263a;cursor:pointer;max-width:130px}
+.lang-switch-label{font-size:10px;font-weight:800;letter-spacing:.6px;color:#8492a3;text-transform:uppercase}
+.lang-switch.auth-lang select{background:#f2f5f9}
+
+/* Metric link on admin dashboard */
+.metric-link{color:inherit;text-decoration:none;display:flex;flex-direction:column}
+.metric-link:hover b{color:#1468e5;text-decoration:underline}
+
+/* Beneficiary edit/delete buttons */
+.icon-btn{border:0;background:#eef3f9;width:32px;height:32px;border-radius:8px;font-size:14px;cursor:pointer;flex:none;color:#17263a}
+.icon-btn:hover{background:#dfe9f4}
+.icon-btn.danger{background:#ffeef0;color:#c33d4d}
+.icon-btn.danger:hover{background:#ffdde1}
+.inline-del{display:inline-flex;margin:0}
+
+/* Admin account status controls */
+.acc-admin-status{margin-top:8px;width:100%;justify-content:flex-start}
+.acc-admin-status select{height:32px}
+
+/* Report lost card */
+.lost-card{display:flex;align-items:center;gap:12px;justify-content:space-between;border-top:1px solid #eef1f5;padding-top:14px;margin-top:4px}
+.lost-card>div{display:flex;flex-direction:column}
+.lost-card b{font-size:12px}
+.lost-card small{font-size:10px;color:#8493a4;margin-top:2px}
+.danger-btn{background:#e64b5d!important;box-shadow:0 6px 14px rgba(230,75,93,.25)!important;padding:9px 13px;font-size:11px}
+.danger-btn:hover{filter:brightness(1.05)}
+.chat-widget__avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.chat-widget__fab-icon img{width:26px;height:26px;object-fit:contain;display:block}
+
+/* Pagination */
+.pager-wrap{padding:16px 20px;border-top:1px solid #eef1f5;display:flex;justify-content:center}
+.pagination{display:flex;gap:6px;flex-wrap:wrap}
+.pagination a{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:600;color:#42546b;background:#fff;transition:.12s}
+.pagination a:hover{background:#eaf2ff;border-color:#c3dcf6;color:#1468e5}
+.pagination a.active{background:linear-gradient(120deg,#0d5fd8,#1468e5);border-color:#1468e5;color:#fff}
+
+/* Transaction detail page */
+.data-table a.tr{color:inherit;text-decoration:none;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid #eef2f5;transition:background .12s}
+.data-table a.tr:hover{background:#f5f8fc}
+.tx-hero{display:flex;align-items:center;gap:18px;padding:26px 28px;border-radius:14px;background:linear-gradient(120deg,#fff,#f1f6fd);border:1px solid var(--line);margin-bottom:18px}
+.tx-hero>i{font-style:normal;width:52px;height:52px;border-radius:12px;background:#17263a;color:#fff;display:grid;place-items:center;font-size:24px;flex:none}
+.tx-hero.credit>i{background:#15a36a}
+.tx-hero>div{display:flex;flex-direction:column;flex:1}
+.tx-hero span{font-size:11px;color:#8492a3;letter-spacing:.6px}
+.tx-hero b{font:700 26px Manrope;margin:4px 0}
+.tx-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px}
+.tx-details{padding:24px}
+.tx-details h2{font:700 15px Manrope;margin:0 0 6px}
+.tx-row{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid #f0f3f7;font-size:13px}
+.tx-row:last-child{border-bottom:0}
+.tx-row span{color:#8492a3}
+.tx-row b{text-align:right}
+@media(max-width:780px){.tx-detail-grid{grid-template-columns:1fr}}
+
+/* Live international fee preview */
+.fee-preview{margin-top:14px;padding:11px 13px;background:#eef6ff;border:1px solid #d4e5fb;border-radius:9px;font-size:12.5px;color:#17263a}
+.fee-preview b{color:#1468e5}
+
+/* In-app notifications */
+.bell i b{position:absolute;left:-8px;top:-8px;background:#e64b5d;color:#fff;font-size:9px;min-width:16px;height:16px;border-radius:8px;display:grid;place-items:center;padding:0 3px}
+.bell-drop .bell-list.app-notif{border-bottom:1px solid #eef1f5}
+.bell-drop .bell-list.app-notif a span{font-size:12px;color:#17263a}
+.bell-all{display:block;padding:10px 15px;font-size:11px;font-weight:700;color:#1468e5;border-bottom:1px solid #eef1f5;text-align:center;background:#f8fafd}
+.notif-row{border-left:3px solid transparent}
+.notif-row.unread{border-left-color:#1468e5;background:#f7faff}
+
+/* Tutorial guided steps */
+.guide-steps{list-style:none;counter-reset:step;margin:12px 0 0;padding:0}
+.guide-steps li{position:relative;padding:8px 0 8px 34px;border-bottom:1px solid #f0f3f7}
+.guide-steps li:last-child{border-bottom:0}
+.guide-steps li:before{counter-increment:step;content:counter(step);position:absolute;left:0;top:8px;width:22px;height:22px;border-radius:50%;background:#1468e5;color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}
+
+/* Loan amortization schedule */
+.loan-schedule{margin:18px 0;padding:0 20px}
+.loan-schedule summary{cursor:pointer;padding:16px 0;font-weight:700;font-size:13px;color:#1468e5}
