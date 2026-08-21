@@ -213,6 +213,22 @@ class Bank_model extends CI_Model
         return $this->db->where('user_id',$user_id)->order_by('created_at','DESC')->get('loans')->result_array();
     }
 
+    public function recent_activity($user_id, $limit = 6)
+    {
+        $items=array();
+        // Recent transactions
+        foreach($this->transactions_for_user((int)$user_id,5) as $t){
+            $items[]=array('icon'=>$t['type']==='credit'?'+':'−','label'=>htmlspecialchars($t['description']),'sub'=>$t['category'],'amount'=>$t['amount'],'currency'=>$t['currency'],'when'=>$t['created_at'],'url'=>'transactions','credit'=>$t['type']==='credit');
+        }
+        // Recent support tickets
+        foreach($this->tickets((int)$user_id) as $t){
+            if(count($items)>=($limit*3))break;
+            $items[]=array('icon'=>'?','label'=>'Support: '.htmlspecialchars($t['subject']),'sub'=>'Ticket '.$t['reference'],'amount'=>0,'currency'=>'','when'=>$t['updated_at'],'url'=>'support/'.$t['id'],'credit'=>false);
+        }
+        usort($items,function($a,$b){return strtotime($b['when'])-strtotime($a['when']);});
+        return array_slice($items,0,$limit);
+    }
+
     public function tickets($user_id = NULL)
     {
         $this->db->select('st.*, u.first_name, u.last_name')->from('support_tickets st')->join('users u','u.id=st.user_id');

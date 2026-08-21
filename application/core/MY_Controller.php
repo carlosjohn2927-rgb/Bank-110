@@ -48,7 +48,7 @@ class MY_Controller extends CI_Controller
             if (($this->user['role'] ?? '') === 'admin') {
                 return $this->Bank_model->all_transactions(NULL, 5);
             }
-            return $this->Bank_model->transactions_for_user((int)$this->user['id'], 5);
+            return $this->Bank_model->recent_activity((int)$this->user['id'], 6);
         } catch (Exception $e) {
             return array();
         }
