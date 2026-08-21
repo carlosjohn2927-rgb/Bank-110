@@ -2,3 +2,105 @@
 @media(max-width:1050px){.auth{grid-template-columns:1fr}.auth-image{display:none!important}.auth>section{min-height:100vh}.grid.two{grid-template-columns:1fr}.stats.four{grid-template-columns:repeat(2,1fr)}.account-grid{grid-template-columns:repeat(2,1fr)}.account-grid .add-card{grid-column:1/-1}.help-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:780px){.shell>aside{transform:translateX(-100%);transition:.25s}.shell>aside.open{transform:none}.shell>main{margin-left:0}.menu{display:block;margin-right:10px}.shell main>header{padding:0 15px}.search{width:auto;flex:1}.head-user>div{display:none}.page{padding:22px 15px}.page-title{align-items:flex-start;flex-direction:column}.balance{grid-template-columns:1fr}.balance-account{margin-top:0}.quick{grid-template-columns:1fr 1fr}.account-grid,.card-grid,.transfer-grid,.settings-grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr;gap:20px}.summary>div{padding:0;border:0}.help-grid{grid-template-columns:1fr 1fr}.loan-hero{grid-template-columns:1fr}.loan-hero>div+div{border:0;border-top:1px solid #ffffff22;padding:20px 0 0;margin-top:20px}.tutorial-grid{grid-template-columns:1fr}}@media(max-width:520px){.auth>section{padding:25px 20px}.auth-card h1{font-size:28px}.quick,.stats,.stats.four,.help-grid{grid-template-columns:1fr}.balance>div:first-child{padding:27px 23px}.balance h2{font-size:31px}.spending{grid-template-columns:1fr}.spending ul{padding:0 35px 20px}.account-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.bank-card{padding:19px}.bank-card h3{font-size:14px}.tutorial-hero>i,.offer>i{display:none}}
 .admin-actions{padding:20px;margin-bottom:18px;display:grid;grid-template-columns:.65fr 1.35fr;gap:25px}.admin-actions h3{font:700 14px Manrope;margin:0 0 10px}.inline-controls{display:flex;gap:8px}.inline-controls input,.inline-controls select{height:40px;min-width:0}.inline-controls button{white-space:nowrap}.conversation{padding:25px}.message{max-width:75%;background:#f5f8fc;border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:14px}.message.staff{margin-left:auto;background:#edf5ff;border-color:#d6e7fb}.message header{display:flex;flex-direction:column}.message header small{font-size:9px;color:#8190a1;margin-top:3px}.message p{font-size:11px;line-height:1.6;margin-bottom:0}.reply-form{border-top:1px solid var(--line);margin-top:25px;padding-top:10px}.reply-form form>div{display:flex;gap:10px;margin-top:10px}.reply-form select{max-width:220px}.reply-form .btn{margin-left:auto}@media(max-width:780px){.admin-actions{grid-template-columns:1fr}.inline-controls{flex-wrap:wrap}.inline-controls>*{flex:1}.message{max-width:95%}}
 .avatar-image{object-fit:cover;display:block}.file-button{margin:0!important;position:relative;overflow:hidden;cursor:pointer}.file-button input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+/* ============================================================
+   Moving Announcement Bar — black text on a white background.
+   Rendered at the very top of every page (site-wide).
+   ============================================================ */
+.announcement{width:100%;height:34px;background:#ffffff;color:#111111;border-bottom:1px solid #ececf0;overflow:hidden;position:relative;z-index:40;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.announcement__track{display:flex;align-items:center;height:34px;width:max-content;animation:announce-scroll 30s linear infinite;will-change:transform}
+.announcement:hover .announcement__track,.announcement:focus-within .announcement__track{animation-play-state:paused}
+.announcement__group{display:flex;align-items:center;white-space:nowrap;min-width:100vw}
+.announcement__item{display:inline-block;padding:8px 26px;font-size:12.5px;font-weight:600;letter-spacing:.15px;color:#0a0a0a;line-height:1}
+.auth>.announcement{grid-column:1/-1}
+.shell>aside{top:34px;height:calc(100vh - 34px)}
+@keyframes announce-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.announcement__track{animation:none}}
+
+/* ============================================================
+   In-Site Operating AI Assistant — chat widget
+   ============================================================ */
+.chat-widget{position:fixed;right:22px;bottom:22px;z-index:1200;font-family:'DM Sans',sans-serif}
+.chat-widget__fab{display:flex;align-items:center;gap:10px;border:0;border-radius:999px;padding:0 20px 0 6px;height:56px;background:linear-gradient(120deg,#0b3f7e,#1468e5);color:#fff;cursor:pointer;box-shadow:0 12px 28px rgba(10,72,180,.35);font-weight:700;font-size:13px;transition:transform .2s,box-shadow .2s;position:relative}
+.chat-widget__fab:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(10,72,180,.42)}
+.chat-widget__fab-icon{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:20px;color:#fff}
+.chat-widget__dot{position:absolute;top:6px;right:8px;width:10px;height:10px;border-radius:50%;background:#35e09a;border:2px solid #1468e5}
+.chat-widget__label{font-size:13px}
+.chat-widget__panel{position:absolute;right:0;bottom:68px;width:min(92vw,382px);height:min(78vh,560px);background:#fff;border:1px solid #e6ebf2;border-radius:18px;box-shadow:0 24px 60px rgba(15,40,80,.28);display:flex;flex-direction:column;overflow:hidden;animation:chat-pop .22s ease}
+@keyframes chat-pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.chat-widget__head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(120deg,#08213f,#0e4d8f);color:#fff}
+.chat-widget__avatar{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);display:grid;place-items:center;font-weight:800;font-size:12px;letter-spacing:.5px}
+.chat-widget__meta{display:flex;flex-direction:column;line-height:1.25}
+.chat-widget__meta b{font-size:13px;font-weight:700}
+.chat-widget__meta small{font-size:10.5px;color:#b9d3ec;display:flex;align-items:center;gap:5px}
+.chat-widget__online{width:7px;height:7px;border-radius:50%;background:#35e09a;display:inline-block;box-shadow:0 0 0 3px rgba(53,224,154,.2)}
+.chat-widget__close{margin-left:auto;background:rgba(255,255,255,.12);border:0;color:#fff;width:30px;height:30px;border-radius:8px;font-size:17px;cursor:pointer}
+.chat-widget__close:hover{background:rgba(255,255,255,.24)}
+.chat-widget__body{flex:1;overflow-y:auto;padding:16px 14px;background:#f7f9fc}
+.chat-widget__messages{display:flex;flex-direction:column;gap:10px}
+.chat-msg{display:flex;max-width:84%}
+.chat-msg.user{align-self:flex-end}
+.chat-msg.assistant{align-self:flex-start}
+.chat-bubble{padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word}
+.chat-msg.user .chat-bubble{background:linear-gradient(120deg,#0d4f95,#1468e5);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.assistant .chat-bubble{background:#fff;color:#25344a;border:1px solid #e7ecf3;border-bottom-left-radius:4px;box-shadow:0 2px 6px rgba(20,45,80,.05)}
+.chat-msg.typing .chat-bubble{display:flex;gap:4px;align-items:center;padding:14px}
+.chat-msg.typing i{width:7px;height:7px;border-radius:50%;background:#9db3cb;animation:chat-blink 1.2s infinite}
+.chat-msg.typing i:nth-child(2){animation-delay:.2s}
+.chat-msg.typing i:nth-child(3){animation-delay:.4s}
+@keyframes chat-blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.chat-actions{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 4px}
+.chat-actions a{font-size:12px;font-weight:700;color:#1468e5;background:#eaf2ff;border:1px solid #d4e5fb;padding:7px 12px;border-radius:8px;text-decoration:none}
+.chat-actions a:hover{background:#dfecff}
+.chat-widget__quick{display:flex;flex-wrap:wrap;gap:7px;padding:10px 14px 4px;border-top:1px solid #eef1f6}
+.chat-chip{border:1px solid #dbe6f3;background:#fff;color:#0f5bc0;font-size:12px;font-weight:600;padding:7px 11px;border-radius:999px;cursor:pointer;transition:.15s}
+.chat-chip:hover{background:#eaf2ff;border-color:#bcd6f6}
+.chat-widget__form{display:flex;gap:8px;padding:10px 14px;border-top:1px solid #eef1f6}
+.chat-widget__input{flex:1;height:42px;border:1px solid #dbe4ee;border-radius:10px;padding:0 13px;font-size:13px;outline:none}
+.chat-widget__input:focus{border-color:#1468e5;box-shadow:0 0 0 3px rgba(20,104,229,.14)}
+.chat-widget__send{width:42px;height:42px;border:0;border-radius:10px;background:linear-gradient(120deg,#0d4f95,#1468e5);color:#fff;font-size:16px;cursor:pointer;transition:.15s}
+.chat-widget__send:hover{filter:brightness(1.08)}
+.chat-widget__note{margin:0;padding:8px 14px 12px;font-size:10px;color:#98a5b6;text-align:center;border-top:1px dashed #eef1f6}
+@media (max-width:520px){.chat-widget{right:14px;bottom:14px}.chat-widget__panel{right:-8px;bottom:64px;width:min(96vw,382px)}}
+
+/* ============================================================
+   Admin settings tabs
+   ============================================================ */
+.settings-nav a{cursor:pointer;border:0;background:none;width:100%;text-align:left}
+.tab{display:none}
+.tab.active{display:block;animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.field-hint{display:block;color:#8a98aa;font-size:10.5px;margin-top:5px}
+.seo-preview{margin-top:14px;font-size:11px;color:#5d6d7f;background:#f3f7fb;border:1px dashed #cfe0f0;padding:10px 12px;border-radius:8px}
+.seo-preview code{color:#0f5bc0;background:#e7f0fc;padding:1px 5px;border-radius:4px}
+.settings-form textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font:14px 'DM Sans';min-height:74px;background:#fff}
+
+/* ============================================================
+   Design polish — refined, modern, premium feel
+   ============================================================ */
+:root{--navy:#081b33;--blue:#1468e5;--blue-2:#0d4f95;--green:#15a36a;--bg:#eef3f9;--ink:#17263a;--muted:#718095;--line:#e3eaf2;--radius:14px}
+body{background:linear-gradient(180deg,#f3f6fb,#e9eff7);color:var(--ink)}
+.shell>aside{background:linear-gradient(180deg,#0a1f3a,#0b2a52 60%,#0a1f3a)}
+.brand>i b{background:linear-gradient(180deg,#2f8bff,#0e5fd8)}
+.shell nav a:hover,.shell nav a.active{background:linear-gradient(90deg,rgba(20,104,229,.18),rgba(20,104,229,.04));color:#fff}
+.shell nav a.active{box-shadow:inset 3px 0 #2f8bff}
+.btn{background:linear-gradient(120deg,#0d5fd8,#1468e5);box-shadow:0 8px 18px rgba(20,104,229,.28);transition:transform .15s,box-shadow .15s,filter .15s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.05);box-shadow:0 12px 24px rgba(20,104,229,.34)}
+.shell main>header{background:rgba(255,255,255,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.search{background:#f2f5f9;border:1px solid transparent;transition:.15s}
+.search:focus-within{border-color:#c9dcf5;background:#fff;box-shadow:0 0 0 3px rgba(20,104,229,.1)}
+.avatar{background:linear-gradient(120deg,#dbeafe,#cfe5ff);border:1px solid #c3dcfa}
+.panel{border-radius:var(--radius);box-shadow:0 3px 16px rgba(22,45,80,.05)}
+.panel:hover{box-shadow:0 6px 24px rgba(22,45,80,.08)}
+.balance{background:linear-gradient(120deg,#081f3d,#0f4a86 55%,#1468c9);box-shadow:0 18px 40px rgba(9,40,90,.28);border-radius:16px}
+.account-card{box-shadow:0 14px 30px rgba(11,46,79,.22)}
+.quick a{transition:transform .15s,box-shadow .15s,border-color .15s}
+.quick a:hover{transform:translateY(-2px);border-color:#bcd3ef;box-shadow:0 8px 18px rgba(20,104,229,.10)}
+input,select,textarea{transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1468e5;box-shadow:0 0 0 3px rgba(20,104,229,.12)}
+.page{animation:fadein .3s ease}
+.auth-card h1{background:linear-gradient(100deg,#0a1f3a,#1468e5);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.auth-card .btn{box-shadow:0 12px 26px rgba(20,104,229,.35)}
+.insight{background:linear-gradient(100deg,#eef6ff,#fff)}
+.status{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:4px 9px;border-radius:999px}
+@media (prefers-reduced-motion:reduce){.page{animation:none}.btn,.quick a{transition:none}}

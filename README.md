@@ -6,7 +6,7 @@ A complete traditional PHP MVC banking application built with **CodeIgniter 3.1.
 
 Normal installation requires only:
 
-1. Upload and extract `application-deployment.zip` in cPanel File Manager.
+1. Upload the project folder (everything in this repository) in cPanel File Manager.
 2. Create a database and user in cPanel MySQL Databases.
 3. Import `database/production.sql` through phpMyAdmin.
 4. Edit `.env` with the domain, database credentials, and preserved secrets.
@@ -25,7 +25,6 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Prebuilt CSS and JavaScript in `public/`
 - Portable writable folders in `assets/`
 - Apache routing and sensitive-file protection in `.htaccess`
-- Ready-to-upload `application-deployment.zip`
 
 ## Application functionality
 
@@ -51,8 +50,14 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Transaction approval and rejection
 - Card and loan monitoring
 - Support ticket replies
-- Platform settings and tutorial
+- Platform settings, SEO, and announcement text
 - Audit logging
+
+### Site-wide UX & engagement
+
+- **Moving announcement bar** — black text on a white background that scrolls across the very top of every page. The text is editable from Admin → System settings (`announcement_text`).
+- **SEO settings** — configurable site name, page title, meta description, and keywords, editable from Admin → System settings. Rendered as `<title>`, meta description/keywords, canonical, Open Graph, and Twitter Card tags in the `<head>` of every page (defaults live in `application/config/seo.php`).
+- **In-Site Operating AI Assistant** — a floating chat widget on every page backed by a fully local engine that needs **zero external API keys and zero third-party connections**. It answers questions about balances, transactions, transfers, cards, loans, fees, and security using the signed-in user's real banking data. The engine lives in `application/libraries/Site_operator_engine.php` (server runtime) and is mirrored by the canonical definition in `src/lib/ai/site-operator-engine.ts`. The AJAX endpoint is `chat`.
 
 ## Portable configuration
 

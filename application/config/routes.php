@@ -23,6 +23,7 @@ $route['loans'] = 'loans/index';
 $route['support'] = 'support/index';
 $route['support/create'] = 'support/create';
 $route['settings'] = 'profile/index';
+$route['chat'] = 'chat/index';
 
 $route['admin/dashboard'] = 'admin/dashboard';
 $route['admin/customers'] = 'admin/customers';
