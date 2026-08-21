@@ -344,10 +344,18 @@ class Bank_model extends CI_Model
         return $metrics;
     }
 
-    public function customers($limit=100,$search=NULL)
+    public function count_customers($search=NULL)
+    {
+        $this->db->from('users u')->where('u.role','customer');
+        if($search!==NULL && $search!=='')$this->db->group_start()->like('u.first_name',$search)->or_like('u.last_name',$search)->or_like('u.email',$search)->or_like('u.username',$search)->group_end();
+        return $this->db->count_all_results();
+    }
+
+    public function customers($limit=100,$search=NULL,$offset=0)
     {
         $this->db->select('u.*, COALESCE(SUM(a.available_balance),0) total_balance, COUNT(a.id) account_count')->from('users u')->join('accounts a','a.user_id=u.id','left')->where('u.role','customer');
         if($search!==NULL && $search!=='')$this->db->group_start()->like('u.first_name',$search)->or_like('u.last_name',$search)->or_like('u.email',$search)->or_like('u.username',$search)->group_end();
+        if ($offset > 0) $this->db->offset((int)$offset);
         return $this->db->group_by('u.id')->order_by('u.created_at','DESC')->limit($limit)->get()->result_array();
     }
 
