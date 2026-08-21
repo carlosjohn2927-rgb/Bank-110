@@ -36,6 +36,7 @@ $route['settings'] = 'profile/index';
 $route['settings/preferences'] = 'profile/preferences';
 $route['settings/password'] = 'profile/password';
 $route['chat'] = 'chat/index';
+$route['scheduler/run'] = 'scheduler/run';
 
 $route['admin/dashboard'] = 'admin/dashboard';
 $route['admin/customers'] = 'admin/customers';

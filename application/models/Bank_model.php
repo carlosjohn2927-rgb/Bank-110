@@ -205,6 +205,21 @@ class Bank_model extends CI_Model
         return $this->db->order_by('t.created_at','DESC')->limit($limit)->get()->result_array();
     }
 
+    public function process_scheduled()
+    {
+        // Complete pending transfers whose scheduled date has arrived.
+        $due=$this->db->select('id')->where('scheduled_for <=',date('Y-m-d'))->where('status','pending')->get('transfers')->result_array();
+        $count=0;
+        foreach($due as $d){
+            $this->db->trans_start();
+            $this->db->where('id',$d['id'])->update('transfers',array('status'=>'completed','updated_at'=>date('Y-m-d H:i:s')));
+            $this->db->where('transfer_id',$d['id'])->update('transactions',array('status'=>'completed'));
+            $this->db->trans_complete();
+            if($this->db->trans_status())$count++;
+        }
+        return $count;
+    }
+
     public function set_transaction_status($id, $status)
     {
         if (!in_array($status,array('completed','failed','cancelled'),TRUE)) return FALSE;
