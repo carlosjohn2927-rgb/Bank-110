@@ -199,6 +199,16 @@ class Bank_model extends CI_Model
         return $this->db->trans_status()?array(TRUE,'Card ending in '.$last_four.' issued.'):array(FALSE,'Unable to issue the card.');
     }
 
+    public function report_lost_card($id, $user_id)
+    {
+        $card=$this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->get('cards')->row_array();
+        if(!$card)return array(FALSE,'Card not found.');
+        $this->db->trans_start();
+        $this->db->where('id',$card['id'])->update('cards',array('status'=>'blocked','is_frozen'=>1,'online_enabled'=>0,'international_enabled'=>0,'updated_at'=>date('Y-m-d H:i:s')));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,'Card blocked.'):array(FALSE,'Unable to block the card.');
+    }
+
     public function toggle_card($id, $user_id, $field)
     {
         $allowed = array('is_frozen','online_enabled','international_enabled');

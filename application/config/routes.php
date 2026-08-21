@@ -35,6 +35,7 @@ $route['exchange'] = 'exchange/index';
 $route['cards'] = 'cards/index';
 $route['cards/create'] = 'cards/create';
 $route['cards/(:num)/toggle'] = 'cards/toggle/$1';
+$route['cards/(:num)/report-lost'] = 'cards/report_lost/$1';
 $route['loans'] = 'loans/index';
 $route['loans/create'] = 'loans/create';
 $route['loans/(:num)/pay'] = 'loans/pay/$1';

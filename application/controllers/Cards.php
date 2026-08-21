@@ -4,6 +4,7 @@ class Cards extends MY_Controller {
  public function __construct(){parent::__construct();$this->require_customer();}
  public function index(){$this->render('customer/cards',array('title'=>'Your cards','cards'=>$this->Bank_model->cards($this->user['id']),'accounts'=>$this->Bank_model->accounts($this->user['id'])));}
  public function toggle($id){if($this->input->method()!=='post')show_404();$field=$this->input->post('field',TRUE);if($this->Bank_model->toggle_card((int)$id,$this->user['id'],$field))$this->session->set_flashdata('success','Card setting updated.');else $this->session->set_flashdata('error','Unable to update this card.');redirect('cards');}
+ public function report_lost($id){if($this->input->method()!=='post')redirect('cards');list($ok,$m)=$this->Bank_model->report_lost_card((int)$id,$this->user['id']);if($ok){$this->Bank_model->audit('card_reported_lost','Card #'.$id.' reported lost/stolen',$this->user['id']);$this->session->set_flashdata('success',$m.' A replacement can be issued from support.');}else $this->session->set_flashdata('error',$m);redirect('cards');}
  public function create(){
   if($this->input->method()!=='post')redirect('cards');
   $this->form_validation->set_rules('account_id','Account','required|integer');

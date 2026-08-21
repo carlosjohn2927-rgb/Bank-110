@@ -217,3 +217,11 @@ dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
 /* Admin account status controls */
 .acc-admin-status{margin-top:8px;width:100%;justify-content:flex-start}
 .acc-admin-status select{height:32px}
+
+/* Report lost card */
+.lost-card{display:flex;align-items:center;gap:12px;justify-content:space-between;border-top:1px solid #eef1f5;padding-top:14px;margin-top:4px}
+.lost-card>div{display:flex;flex-direction:column}
+.lost-card b{font-size:12px}
+.lost-card small{font-size:10px;color:#8493a4;margin-top:2px}
+.danger-btn{background:#e64b5d!important;box-shadow:0 6px 14px rgba(230,75,93,.25)!important;padding:9px 13px;font-size:11px}
+.danger-btn:hover{filter:brightness(1.05)}
