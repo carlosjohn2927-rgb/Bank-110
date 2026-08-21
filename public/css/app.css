@@ -169,3 +169,30 @@ dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
 /* Audit log table */
 .audit-table .muted-ip{color:#9aa7b6;font-size:11px}
 .audit-table strong{font-size:11px;font-weight:700}
+
+/* Account card actions + details reveal */
+.card-actions{display:flex;gap:8px;margin-top:14px}
+.card-actions .btn{padding:8px 12px;font-size:11px;background:#ffffff1a;box-shadow:none;border:1px solid #ffffff26}
+.card-actions .btn:hover{background:#ffffff2b}
+.acc-details{display:flex;flex-direction:column}
+.acc-detail-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid #eef1f5}
+.acc-detail-row small{font-size:9px;letter-spacing:1.2px;color:#8492a3;font-weight:800}
+.acc-detail-row b{font:700 15px Manrope;color:#17263a;letter-spacing:.5px}
+.reveal-wrap{display:flex;align-items:center;gap:10px}
+.reveal-hidden{letter-spacing:3px;color:#9aa7b6!important}
+.reveal-btn{border:0;background:#eaf2ff;color:#1468e5;font-size:11px;font-weight:700;padding:6px 10px;border-radius:7px;cursor:pointer}
+
+/* Exchange page */
+.fx-preview{margin-top:14px;padding:13px 15px;background:#eef6ff;border:1px solid #d4e5fb;border-radius:9px;font-size:13px;color:#17263a}
+.fx-preview b{color:#1468e5}
+.fx-preview.warn{background:#fff3d6;border-color:#f0dfb0;color:#8a6d1f}
+.fx-rates{list-style:none;margin:14px 0 0;padding:0}
+.fx-rates li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eef1f5;font-size:12px}
+.fx-rates li b{font-size:12px}
+.fx-rates li span{font-weight:700;color:#1468e5}
+
+/* Admin exchange rate form */
+.fx-rate-form{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.fx-rate-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.fx-rate-row label{font-size:13px;font-weight:700;color:#17263a;min-width:110px}
+.fx-rate-row input{max-width:180px;text-align:right}

@@ -97,6 +97,11 @@ CREATE TABLE IF NOT EXISTS user_preferences (
  PRIMARY KEY(user_id,pref_key), CONSTRAINT fk_pref_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS exchange_rates (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, from_currency CHAR(3) NOT NULL, to_currency CHAR(3) NOT NULL, rate DECIMAL(20,10) NOT NULL,
+ updated_at DATETIME NOT NULL, UNIQUE KEY uq_pair(from_currency,to_currency)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS password_resets (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at DATETIME NOT NULL, used TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
  INDEX idx_reset_user(user_id), INDEX idx_reset_token(token), CONSTRAINT fk_reset_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -211,7 +216,14 @@ INSERT INTO settings(setting_key,setting_value,updated_at) VALUES
 ('announcement_text','Welcome to NorthWest — Secure online banking with 256-bit encryption · Free NorthWest-to-NorthWest transfers · 24/7 support',NOW()),
 ('seo_site_name','NorthWest Financial',NOW()),('seo_title','NorthWest Financial — Secure Online Banking',NOW()),
 ('seo_description','Simple, secure online banking. Send money, manage cards, apply for loans and track your finances — all in one protected place with 256-bit encryption.',NOW()),
-('seo_keywords','online banking, secure banking, bank transfers, digital bank, NorthWest, personal accounts, savings, loans',NOW())
+('seo_keywords','online banking, secure banking, bank transfers, digital bank, NorthWest, personal accounts, savings, loans',NOW()),
+('routing_number','021000021',NOW()),('international_fee_percent','1.5',NOW()),('international_fee_flat','0',NOW())
 ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value),updated_at=VALUES(updated_at);
+
+INSERT INTO exchange_rates (from_currency,to_currency,rate,updated_at) VALUES
+('USD','EUR','0.9200',NOW()),('USD','GBP','0.7900',NOW()),
+('EUR','USD','1.0870',NOW()),('EUR','GBP','0.8590',NOW()),
+('GBP','USD','1.2660',NOW()),('GBP','EUR','1.1640',NOW())
+ON DUPLICATE KEY UPDATE rate=VALUES(rate),updated_at=VALUES(updated_at);
 
 COMMIT;

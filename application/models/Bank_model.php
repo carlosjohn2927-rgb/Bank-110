@@ -75,10 +75,19 @@ class Bank_model extends CI_Model
         if ($amount > $daily) return array(FALSE, 'This transfer exceeds your daily limit of '.number_format($daily).'.');
         if (($amount + $this->transfer_usage_today($user_id)) > $daily) return array(FALSE, 'This transfer would exceed your remaining daily limit.');
 
+        // International transfers carry a fee (percentage + optional flat).
+        $type=$data['transfer_type'] ?? 'domestic';
+        $fee=0;
+        if($type==='international'){
+            try{$settings=$this->settings();$fee_pct=(float)($settings['international_fee_percent']??1.5);$fee_flat=(float)($settings['international_fee_flat']??0);}catch(Exception $e){$fee_pct=1.5;$fee_flat=0;}
+            $fee=round($fee_flat + $amount*$fee_pct/100,2);
+        }
+        if($amount+$fee>(float)$account['available_balance'])return array(FALSE,'Insufficient available balance to cover the transfer and fees.');
+
         $reference = 'NW-'.date('ymd').'-'.random_int(100000, 999999);
         $now = date('Y-m-d H:i:s');
         $this->db->trans_start();
-        $this->db->where('id', $account['id'])->set('balance', 'balance-'.$amount, FALSE)->set('available_balance', 'available_balance-'.$amount, FALSE)->update('accounts');
+        $this->db->where('id', $account['id'])->set('balance', 'balance-'.($amount+$fee), FALSE)->set('available_balance', 'available_balance-'.($amount+$fee), FALSE)->update('accounts');
         $routing=$data['recipient_routing'] ?? '';
         if($routing==='' && !empty($data['beneficiary_id'])){
             $b=$this->db->select('routing_code')->where('id',(int)$data['beneficiary_id'])->get('beneficiaries')->row_array();
@@ -87,7 +96,7 @@ class Bank_model extends CI_Model
         $this->db->insert('transfers', array(
             'reference'=>$reference, 'user_id'=>$user_id, 'from_account_id'=>$account['id'], 'beneficiary_id'=>$data['beneficiary_id'] ?: NULL,
             'recipient_name'=>$data['recipient_name'], 'recipient_account'=>$data['recipient_account'], 'recipient_bank'=>$data['recipient_bank'],
-            'recipient_routing'=>$routing ?: NULL, 'transfer_type'=>$data['transfer_type'], 'amount'=>$amount, 'currency'=>$account['currency'], 'fee'=>0, 'note'=>$data['note'],
+            'recipient_routing'=>$routing ?: NULL, 'transfer_type'=>$type, 'amount'=>$amount, 'currency'=>$account['currency'], 'fee'=>$fee, 'note'=>$data['note'],
             'scheduled_for'=>$data['scheduled_for'], 'status'=>'pending', 'created_at'=>$now, 'updated_at'=>$now
         ));
         $transfer_id = $this->db->insert_id();
@@ -537,6 +546,55 @@ class Bank_model extends CI_Model
     public function settings()
     {
         $rows=$this->db->get('settings')->result_array(); $out=array(); foreach($rows as $r)$out[$r['setting_key']]=$r['setting_value']; return $out;
+    }
+
+    /* ---- Multi-currency exchange ---- */
+
+    public function exchange_rates()
+    {
+        $rows=$this->db->order_by('from_currency','ASC')->get('exchange_rates')->result_array();
+        return $rows;
+    }
+
+    public function exchange_rate($from,$to)
+    {
+        if($from===$to)return 1.0;
+        $r=$this->db->where(array('from_currency'=>$from,'to_currency'=>$to))->get('exchange_rates')->row_array();
+        if($r)return (float)$r['rate'];
+        // Try the inverse if a direct pair is missing.
+        $inv=$this->db->where(array('from_currency'=>$to,'to_currency'=>$from))->get('exchange_rates')->row_array();
+        if($inv && (float)$inv['rate']>0)return 1/(float)$inv['rate'];
+        return NULL;
+    }
+
+    public function save_exchange_rate($from,$to,$rate)
+    {
+        $rate=round((float)$rate,10);
+        if($rate<=0)return FALSE;
+        return $this->db->replace('exchange_rates',array('from_currency'=>$from,'to_currency'=>$to,'rate'=>$rate,'updated_at'=>date('Y-m-d H:i:s')));
+    }
+
+    public function exchange_convert($user_id,$from_account_id,$to_account_id,$amount)
+    {
+        $from=$this->account((int)$from_account_id,$user_id);
+        $to=$this->account((int)$to_account_id,$user_id);
+        $amount=round((float)$amount,2);
+        if(!$from || !$to || $from['status']!=='active' || $to['status']!=='active')return array(FALSE,'One of the selected accounts is unavailable.');
+        if($amount<=0)return array(FALSE,'Enter a valid amount.');
+        if($amount>(float)$from['available_balance'])return array(FALSE,'Insufficient balance in the source account.');
+        if($from['currency']===$to['currency'])return array(FALSE,'Choose two accounts with different currencies.');
+        $rate=$this->exchange_rate($from['currency'],$to['currency']);
+        if($rate===NULL || $rate<=0)return array(FALSE,'No exchange rate is configured for '.$from['currency'].' → '.$to['currency'].'.');
+        $converted=round($amount*$rate,2);
+        $now=date('Y-m-d H:i:s');
+        $ref='FX-'.date('ymd').'-'.random_int(100000,999999);
+        $this->db->trans_start();
+        $this->db->where('id',$from['id'])->set('balance','balance-'.$amount,FALSE)->set('available_balance','available_balance-'.$amount,FALSE)->update('accounts');
+        $this->db->where('id',$to['id'])->set('balance','balance+'.$converted,FALSE)->set('available_balance','available_balance+'.$converted,FALSE)->update('accounts');
+        $this->db->insert('transactions',array('account_id'=>$from['id'],'reference'=>$ref.'-D','type'=>'debit','category'=>'Currency exchange','description'=>'Exchanged to '.$to['currency'],'amount'=>$amount,'currency'=>$from['currency'],'balance_after'=>(float)$from['available_balance']-$amount,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
+        $this->db->insert('transactions',array('account_id'=>$to['id'],'reference'=>$ref.'-C','type'=>'credit','category'=>'Currency exchange','description'=>'Exchanged from '.$from['currency'],'amount'=>$converted,'currency'=>$to['currency'],'balance_after'=>(float)$to['available_balance']+$converted,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,array('reference'=>$ref,'rate'=>$rate,'converted'=>$converted,'from_currency'=>$from['currency'],'to_currency'=>$to['currency'])):array(FALSE,'The exchange could not be completed.');
     }
 
     public function save_settings($values)

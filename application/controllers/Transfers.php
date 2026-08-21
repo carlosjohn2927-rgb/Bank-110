@@ -19,7 +19,7 @@ class Transfers extends MY_Controller {
    redirect('transfer');
   }
   $settings=$this->Bank_model->settings();
-  $this->render('customer/transfer',array('title'=>'Send money','accounts'=>$this->Bank_model->accounts($this->user['id']),'beneficiaries'=>$this->Bank_model->beneficiaries($this->user['id']),'daily_limit'=>(float)($settings['daily_transfer_limit']??25000),'used_today'=>$this->Bank_model->transfer_usage_today($this->user['id'])));
+  $this->render('customer/transfer',array('title'=>'Send money','accounts'=>$this->Bank_model->accounts($this->user['id']),'beneficiaries'=>$this->Bank_model->beneficiaries($this->user['id']),'daily_limit'=>(float)($settings['daily_transfer_limit']??25000),'used_today'=>$this->Bank_model->transfer_usage_today($this->user['id']),'intl_fee_pct'=>(float)($settings['international_fee_percent']??1.5),'intl_fee_flat'=>(float)($settings['international_fee_flat']??0)));
  }
  public function beneficiaries(){
   if($this->input->method()==='post'){
