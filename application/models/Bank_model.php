@@ -423,6 +423,14 @@ class Bank_model extends CI_Model
         return $this->db->trans_status();
     }
 
+    public function transaction($id)
+    {
+        $this->db->select('t.*, a.account_number, a.name account_name, u.first_name, u.last_name, u.email')->from('transactions t')->join('accounts a','a.id=t.account_id')->join('users u','u.id=a.user_id')->where('t.id',(int)$id);
+        $t=$this->db->get()->row_array();
+        if($t && $t['transfer_id']) $t['transfer']=$this->db->where('id',$t['transfer_id'])->get('transfers')->row_array();
+        return $t;
+    }
+
     public function set_transaction_status($id, $status)
     {
         if (!in_array($status,array('completed','failed','cancelled'),TRUE)) return FALSE;

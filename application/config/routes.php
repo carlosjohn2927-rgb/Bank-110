@@ -65,6 +65,7 @@ $route['admin/accounts/(:num)/status'] = 'admin/account_status/$1';
 $route['admin/transactions'] = 'admin/transactions';
 $route['admin/transactions/export'] = 'admin/export_transactions';
 $route['admin/transactions/export/(:any)'] = 'admin/export_transactions/$1';
+$route['admin/transactions/(:num)'] = 'admin/transaction/$1';
 $route['admin/transactions/(:num)/status'] = 'admin/transaction_status/$1';
 $route['admin/transfers'] = 'admin/transfers';
 $route['admin/deposits'] = 'admin/deposits';
