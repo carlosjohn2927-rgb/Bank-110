@@ -20,3 +20,6 @@ assets/uploads/*
 node_modules/
 dist/
 .DS_Store
+
+# Local environment (contains secrets — use .env.example as the template)
+.env
