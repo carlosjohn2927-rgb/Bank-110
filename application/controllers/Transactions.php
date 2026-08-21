@@ -4,7 +4,20 @@ class Transactions extends MY_Controller {
  public function __construct(){parent::__construct();$this->require_customer();}
  public function index(){
   $filters=array('search'=>$this->input->get('q',TRUE),'type'=>$this->input->get('type',TRUE));
-  $this->render('customer/transactions',array('title'=>'Transactions','transactions'=>$this->Bank_model->transactions_for_user($this->user['id'],100,$filters),'filters'=>$filters));
+  $per_page=25;
+  $total=$this->Bank_model->count_transactions_for_user($this->user['id'],$filters);
+  $this->load->library('pagination');
+  $this->config->load('pagination_custom',TRUE);
+  $cfg=$this->config->item('pagination_custom') ?: array();
+  $cfg['base_url']=site_url('transactions');
+  $cfg['total_rows']=$total;
+  $cfg['per_page']=$per_page;
+  $cfg['reuse_query_string']=TRUE;
+  $cfg['first_url']=$cfg['base_url'];
+  $this->pagination->initialize($cfg);
+  $page=$this->input->get('page');
+  $offset=((int)max(1,$page)-1)*$per_page;
+  $this->render('customer/transactions',array('title'=>'Transactions','transactions'=>$this->Bank_model->transactions_for_user($this->user['id'],$per_page,$filters,$offset),'filters'=>$filters,'pagination'=>$this->pagination->create_links(),'total'=>$total,'per_page'=>$per_page));
  }
  public function statement(){
   $filters=array('search'=>$this->input->get('q',TRUE),'type'=>$this->input->get('type',TRUE));

@@ -79,11 +79,20 @@ class Bank_model extends CI_Model
         return (float)($row['total'] ?? 0);
     }
 
-    public function transactions_for_user($user_id, $limit = 50, $filters = array())
+    public function count_transactions_for_user($user_id, $filters = array())
+    {
+        $this->db->select('t.id')->from('transactions t')->join('accounts a', 'a.id=t.account_id')->where('a.user_id', $user_id);
+        if (!empty($filters['search'])) $this->db->group_start()->like('t.description', $filters['search'])->or_like('t.reference', $filters['search'])->group_end();
+        if (!empty($filters['type'])) $this->db->where('t.type', $filters['type']);
+        return $this->db->count_all_results();
+    }
+
+    public function transactions_for_user($user_id, $limit = 50, $filters = array(), $offset = 0)
     {
         $this->db->select('t.*, a.account_number, a.name account_name')->from('transactions t')->join('accounts a', 'a.id=t.account_id')->where('a.user_id', $user_id);
         if (!empty($filters['search'])) $this->db->group_start()->like('t.description', $filters['search'])->or_like('t.reference', $filters['search'])->group_end();
         if (!empty($filters['type'])) $this->db->where('t.type', $filters['type']);
+        if ($offset > 0) $this->db->offset((int)$offset);
         return $this->db->order_by('t.created_at', 'DESC')->limit($limit)->get()->result_array();
     }
 
@@ -339,12 +348,22 @@ class Bank_model extends CI_Model
         $user['accounts']=$this->accounts($id); $user['transactions']=$this->transactions_for_user($id,20); return $user;
     }
 
-    public function all_transactions($kind=NULL, $limit=100, $search=NULL)
+    public function count_all_transactions($kind=NULL, $search=NULL)
+    {
+        $this->db->select('t.id')->from('transactions t')->join('accounts a','a.id=t.account_id')->join('users u','u.id=a.user_id');
+        if ($kind === 'deposits') $this->db->where('t.type','credit');
+        if ($kind === 'transfers') $this->db->where('t.category','Transfer');
+        if($search!==NULL && $search!=='')$this->db->group_start()->like('t.reference',$search)->or_like('t.description',$search)->or_like('t.category',$search)->or_like('u.first_name',$search)->or_like('u.last_name',$search)->group_end();
+        return $this->db->count_all_results();
+    }
+
+    public function all_transactions($kind=NULL, $limit=100, $search=NULL, $offset=0)
     {
         $this->db->select('t.*, a.account_number, u.first_name, u.last_name')->from('transactions t')->join('accounts a','a.id=t.account_id')->join('users u','u.id=a.user_id');
         if ($kind === 'deposits') $this->db->where('t.type','credit');
         if ($kind === 'transfers') $this->db->where('t.category','Transfer');
         if($search!==NULL && $search!=='')$this->db->group_start()->like('t.reference',$search)->or_like('t.description',$search)->or_like('t.category',$search)->or_like('u.first_name',$search)->or_like('u.last_name',$search)->group_end();
+        if ($offset > 0) $this->db->offset((int)$offset);
         return $this->db->order_by('t.created_at','DESC')->limit($limit)->get()->result_array();
     }
 

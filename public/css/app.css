@@ -227,3 +227,10 @@ dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
 .danger-btn:hover{filter:brightness(1.05)}
 .chat-widget__avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .chat-widget__fab-icon img{width:26px;height:26px;object-fit:contain;display:block}
+
+/* Pagination */
+.pager-wrap{padding:16px 20px;border-top:1px solid #eef1f5;display:flex;justify-content:center}
+.pagination{display:flex;gap:6px;flex-wrap:wrap}
+.pagination a{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-weight:600;color:#42546b;background:#fff;transition:.12s}
+.pagination a:hover{background:#eaf2ff;border-color:#c3dcf6;color:#1468e5}
+.pagination a.active{background:linear-gradient(120deg,#0d5fd8,#1468e5);border-color:#1468e5;color:#fff}
