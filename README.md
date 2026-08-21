@@ -43,6 +43,10 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Scheduled transfers (processed by a cron endpoint)
 - Support tickets with live help search
 - Customer profile, avatar uploads, notification/region preferences, and password change
+- Optional two-factor authentication (email OTP) at sign-in
+- KYC verification status visible to customers and managed by admins
+- Public self-service registration (toggle from Admin → System settings)
+- Transactional email notifications (welcome, transfer, ticket reply, password reset) via SMTP
 
 ### Administration
 
@@ -56,6 +60,9 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Support ticket replies
 - Platform settings, SEO, and announcement text
 - Admin user management
+- KYC verification
+- Loan issuance
+- Guided tutorial content
 - Audit logging
 
 ### Site-wide UX & engagement
