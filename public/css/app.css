@@ -213,3 +213,7 @@ dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
 .icon-btn.danger{background:#ffeef0;color:#c33d4d}
 .icon-btn.danger:hover{background:#ffdde1}
 .inline-del{display:inline-flex;margin:0}
+
+/* Admin account status controls */
+.acc-admin-status{margin-top:8px;width:100%;justify-content:flex-start}
+.acc-admin-status select{height:32px}

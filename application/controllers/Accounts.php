@@ -17,6 +17,7 @@ class Accounts extends MY_Controller {
   }
   redirect('accounts');
  }
+ public function status($id){if($this->input->method()!=='post')show_404();$status=$this->input->post('status',TRUE);list($ok,$m)=$this->Bank_model->update_account_status((int)$id,$this->user['id'],$status);if($ok){$this->Bank_model->audit('account_status','Account #'.$id.' set to '.$m,$this->user['id']);$this->session->set_flashdata('success','Account is now '.$m.'.');}else $this->session->set_flashdata('error',$m);redirect('accounts');}
  public function deposit(){
   if($this->input->method()!=='post')show_404();
   $this->form_validation->set_rules('account_id','Account','required|integer');

@@ -33,6 +33,24 @@ class Bank_model extends CI_Model
         return $this->db->get('accounts')->row_array();
     }
 
+    public function update_account_status($id, $user_id, $status)
+    {
+        $status=in_array($status,array('active','frozen','closed'),TRUE)?$status:'active';
+        $a=$this->account((int)$id,(int)$user_id);
+        if(!$a || $a['is_primary'])return array(FALSE,'Account unavailable, or a primary account cannot be closed.');
+        $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->update('accounts',array('status'=>$status,'updated_at'=>date('Y-m-d H:i:s')));
+        return array(TRUE,ucfirst($status));
+    }
+
+    public function admin_update_account_status($id, $status)
+    {
+        $status=in_array($status,array('active','frozen','closed'),TRUE)?$status:'active';
+        $a=$this->db->where('id',(int)$id)->get('accounts')->row_array();
+        if(!$a)return array(FALSE,'Account not found.');
+        $this->db->where('id',(int)$id)->update('accounts',array('status'=>$status,'updated_at'=>date('Y-m-d H:i:s')));
+        return array(TRUE,ucfirst($status));
+    }
+
     public function total_balance($user_id)
     {
         $row = $this->db->select_sum('available_balance')->where('user_id', $user_id)->where('status', 'active')->get('accounts')->row_array();
