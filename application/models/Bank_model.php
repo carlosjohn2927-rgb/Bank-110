@@ -257,11 +257,19 @@ class Bank_model extends CI_Model
         return array_slice($items,0,$limit);
     }
 
-    public function tickets($user_id = NULL)
+    public function tickets($user_id = NULL, $limit = 100, $offset = 0)
     {
         $this->db->select('st.*, u.first_name, u.last_name')->from('support_tickets st')->join('users u','u.id=st.user_id');
         if ($user_id !== NULL) $this->db->where('st.user_id',$user_id);
-        return $this->db->order_by('st.updated_at','DESC')->get()->result_array();
+        if ($offset > 0) $this->db->offset((int)$offset);
+        return $this->db->order_by('st.updated_at','DESC')->limit($limit)->get()->result_array();
+    }
+
+    public function count_tickets($user_id = NULL)
+    {
+        $this->db->from('support_tickets st');
+        if ($user_id !== NULL) $this->db->where('st.user_id',$user_id);
+        return $this->db->count_all_results();
     }
 
     public function create_ticket($user_id, $data)
