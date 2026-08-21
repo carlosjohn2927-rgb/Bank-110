@@ -1,0 +1,43 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+$route['default_controller'] = 'auth/login';
+$route['404_override'] = '';
+$route['translate_uri_dashes'] = FALSE;
+
+$route['login'] = 'auth/login';
+$route['verify'] = 'auth/verify';
+$route['auth/customer_login'] = 'auth/customer_login';
+$route['logout'] = 'auth/logout';
+$route['admin'] = 'auth/admin';
+$route['admin/login'] = 'auth/admin';
+$route['admin/logout'] = 'auth/logout';
+$route['dashboard'] = 'dashboard/index';
+$route['accounts'] = 'accounts/index';
+$route['transactions'] = 'transactions/index';
+$route['transfer'] = 'transfers/create';
+$route['transfers'] = 'transfers/index';
+$route['beneficiaries'] = 'transfers/beneficiaries';
+$route['cards'] = 'cards/index';
+$route['cards/(:num)/toggle'] = 'cards/toggle/$1';
+$route['loans'] = 'loans/index';
+$route['support'] = 'support/index';
+$route['support/create'] = 'support/create';
+$route['settings'] = 'profile/index';
+
+$route['admin/dashboard'] = 'admin/dashboard';
+$route['admin/customers'] = 'admin/customers';
+$route['admin/customers/create'] = 'admin/customer_create';
+$route['admin/customers/(:num)'] = 'admin/customer/$1';
+$route['admin/customers/(:num)/status'] = 'admin/customer_status/$1';
+$route['admin/customers/(:num)/adjust'] = 'admin/customer_adjust/$1';
+$route['admin/transactions'] = 'admin/transactions';
+$route['admin/transactions/(:num)/status'] = 'admin/transaction_status/$1';
+$route['admin/transfers'] = 'admin/transfers';
+$route['admin/deposits'] = 'admin/deposits';
+$route['admin/loans'] = 'admin/loans';
+$route['admin/cards'] = 'admin/cards';
+$route['admin/tickets'] = 'admin/tickets';
+$route['admin/tickets/(:num)'] = 'admin/ticket/$1';
+$route['admin/tickets/(:num)/reply'] = 'admin/ticket_reply/$1';
+$route['admin/tutorial'] = 'admin/tutorial';
+$route['admin/settings'] = 'admin/settings';
