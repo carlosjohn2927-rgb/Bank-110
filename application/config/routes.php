@@ -49,6 +49,7 @@ $route['settings/twofa'] = 'profile/twofa';
 $route['chat'] = 'chat/index';
 $route['language/set'] = 'language/set';
 $route['scheduler/run'] = 'scheduler/run';
+$route['setup/check'] = 'setup/check';
 
 $route['admin/dashboard'] = 'admin/dashboard';
 $route['admin/customers'] = 'admin/customers';

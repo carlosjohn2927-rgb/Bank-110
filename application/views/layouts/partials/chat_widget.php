@@ -8,14 +8,14 @@ $chat_endpoint = site_url('chat');
 ?>
 <div class="chat-widget" id="nw-chat" data-endpoint="<?= html_escape($chat_endpoint) ?>" data-name="NorthWest Assistant">
   <button class="chat-widget__fab" type="button" aria-label="Open AI assistant" aria-expanded="false">
-    <span class="chat-widget__fab-icon">✦</span>
+    <span class="chat-widget__fab-icon"><img src="<?=base_url('public/img/ai/assistant-glyph.webp')?>" alt=""></span>
     <span class="chat-widget__label">Ask AI</span>
     <span class="chat-widget__dot"></span>
   </button>
 
   <div class="chat-widget__panel" hidden>
     <header class="chat-widget__head">
-      <span class="chat-widget__avatar">AI</span>
+      <span class="chat-widget__avatar"><img src="<?=base_url('public/img/ai/assistant-avatar.webp')?>" alt="NorthWest Assistant"></span>
       <div class="chat-widget__meta">
         <b>NorthWest Assistant</b>
         <small><span class="chat-widget__online"></span> Online · In-site operator</small>
