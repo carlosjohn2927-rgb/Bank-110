@@ -30,8 +30,8 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 
 ### Personal banking
 
-- Verification-code and password authentication with password recovery (forgot / reset)
-- Multi-account dashboard with real spending breakdown and insights
+- Verification-code and password authentication with password recovery (forgot / reset) and brute-force login protection
+- Multi-account dashboard with real spending breakdown, insights, and empty states
 - View full account numbers and bank routing numbers (with reveal-to-show)
 - Open new accounts (checking, savings, investment) with optional opening deposit
 - In-account deposits
@@ -47,7 +47,7 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Per-user in-app notifications (bell with unread badge, notifications page)
 - Customer profile, avatar uploads, notification/region preferences, and password change
 - Configurable daily transfer limit with real-time usage tracking and enforcement
-- Optional two-factor authentication (email OTP) at sign-in
+- Optional two-factor authentication (email OTP) at sign-in and self-service KYC verification request
 - Account freeze/close, report lost/stolen card, scheduled-transfer management (list & cancel), and granular notification toggles
 - KYC verification status visible to customers and managed by admins
 - Public self-service registration (toggle from Admin → System settings)
