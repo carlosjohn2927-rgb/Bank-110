@@ -495,6 +495,13 @@ class Bank_model extends CI_Model
         return $this->db->where('id',$user_id)->update('users',array('password_hash'=>password_hash($new,PASSWORD_DEFAULT),'updated_at'=>date('Y-m-d H:i:s')));
     }
 
+    public function audit_log($limit=200,$search=NULL)
+    {
+        $this->db->select('l.*, u.first_name, u.last_name, u.email')->from('audit_logs l')->join('users u','u.id=l.user_id','left');
+        if($search!==NULL && $search!=='')$this->db->group_start()->like('l.action',$search)->or_like('l.description',$search)->or_like('u.email',$search)->group_end();
+        return $this->db->order_by('l.id','DESC')->limit($limit)->get()->result_array();
+    }
+
     public function audit($action,$description,$user_id=NULL)
     {
         return $this->db->insert('audit_logs',array('user_id'=>$user_id,'action'=>$action,'description'=>$description,'ip_address'=>$this->input->ip_address(),'user_agent'=>substr($this->input->user_agent(),0,255),'created_at'=>date('Y-m-d H:i:s')));

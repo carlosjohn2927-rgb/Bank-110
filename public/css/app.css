@@ -165,3 +165,7 @@ dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
 .list a.list-row{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid #eef2f5;transition:background .12s}
 .list a.list-row:hover{background:#f5f8fc}
 .row-arrow{color:#c3cdda;font-size:20px}
+
+/* Audit log table */
+.audit-table .muted-ip{color:#9aa7b6;font-size:11px}
+.audit-table strong{font-size:11px;font-weight:700}
