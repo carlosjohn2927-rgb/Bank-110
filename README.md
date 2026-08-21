@@ -35,7 +35,7 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - View full account numbers and bank routing numbers (with reveal-to-show)
 - Open new accounts (checking, savings, investment) with optional opening deposit
 - In-account deposits
-- Searchable transactions with CSV statement download
+- Searchable transactions with CSV statement download, pagination, and per-transaction detail
 - Database-transaction-backed transfers (internal / domestic / international tabs) with configurable international transfer fees and admin-approved completion (money moves on approval, not submission)
 - Multi-currency exchange between own accounts (rates managed by admins)
 - Bill payment to saved payees
@@ -44,6 +44,7 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Loan applications (amortized) and loan payments
 - Scheduled transfers (processed by a cron endpoint)
 - Support tickets with live help search and per-ticket conversations
+- Per-user in-app notifications (bell with unread badge, notifications page)
 - Customer profile, avatar uploads, notification/region preferences, and password change
 - Configurable daily transfer limit with real-time usage tracking and enforcement
 - Optional two-factor authentication (email OTP) at sign-in
