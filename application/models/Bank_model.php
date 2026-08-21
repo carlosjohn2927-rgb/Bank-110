@@ -87,7 +87,10 @@ class Bank_model extends CI_Model
         $reference = 'NW-'.date('ymd').'-'.random_int(100000, 999999);
         $now = date('Y-m-d H:i:s');
         $this->db->trans_start();
-        $this->db->where('id', $account['id'])->set('balance', 'balance-'.($amount+$fee), FALSE)->set('available_balance', 'available_balance-'.($amount+$fee), FALSE)->update('accounts');
+        // Money is NOT deducted here. The transfer stays "pending" until it is
+        // completed (admin approval or the scheduled-transfer cron), at which
+        // point complete_transfer() debits the account. This lets approve/decline
+        // genuinely reconcile the balance.
         $routing=$data['recipient_routing'] ?? '';
         if($routing==='' && !empty($data['beneficiary_id'])){
             $b=$this->db->select('routing_code')->where('id',(int)$data['beneficiary_id'])->get('beneficiaries')->row_array();
@@ -270,18 +273,54 @@ class Bank_model extends CI_Model
         $due=$this->db->select('id')->where('scheduled_for <=',date('Y-m-d'))->where('status','pending')->get('transfers')->result_array();
         $count=0;
         foreach($due as $d){
-            $this->db->trans_start();
-            $this->db->where('id',$d['id'])->update('transfers',array('status'=>'completed','updated_at'=>date('Y-m-d H:i:s')));
-            $this->db->where('transfer_id',$d['id'])->update('transactions',array('status'=>'completed'));
-            $this->db->trans_complete();
-            if($this->db->trans_status())$count++;
+            list($ok,$m)=$this->complete_transfer($d['id']);
+            if($ok)$count++;
         }
         return $count;
+    }
+
+    public function complete_transfer($transfer_id)
+    {
+        $transfer=$this->db->where('id',(int)$transfer_id)->get('transfers')->row_array();
+        if(!$transfer || $transfer['status']!=='pending')return array(FALSE,'This transfer is not pending.');
+        $account=$this->account($transfer['from_account_id']);
+        if(!$account || $account['status']!=='active')return array(FALSE,'The source account is unavailable.');
+        $total=$transfer['amount']+$transfer['fee'];
+        if($total>(float)$account['available_balance'])return array(FALSE,'Insufficient balance to complete this transfer.');
+        $now=date('Y-m-d H:i:s');
+        $this->db->trans_start();
+        $this->db->where('id',$account['id'])->set('balance','balance-'.$total,FALSE)->set('available_balance','available_balance-'.$total,FALSE)->update('accounts');
+        $this->db->where('id',$transfer['id'])->update('transfers',array('status'=>'completed','updated_at'=>$now));
+        $this->db->where('transfer_id',$transfer['id'])->update('transactions',array('status'=>'completed','balance_after'=>(float)$account['available_balance']-$total));
+        $this->db->trans_complete();
+        if($this->db->trans_status() && function_exists('notify_user')){
+            try{notify_user((int)$transfer['user_id'],'Transfer '.$transfer['reference'].' completed','<p>Your transfer of '.$this->money_local($transfer['amount'],$transfer['currency']).' to '.htmlspecialchars($transfer['recipient_name']).' has been completed.</p>');}catch(Exception $e){}
+        }
+        return $this->db->trans_status()?array(TRUE,$transfer['reference']):array(FALSE,'The transfer could not be completed.');
+    }
+
+    public function decline_transfer($transfer_id,$status='failed')
+    {
+        $status=in_array($status,array('failed','cancelled'),TRUE)?$status:'failed';
+        $transfer=$this->db->where('id',(int)$transfer_id)->get('transfers')->row_array();
+        if(!$transfer || $transfer['status']!=='pending')return FALSE;
+        $this->db->trans_start();
+        $this->db->where('id',$transfer['id'])->update('transfers',array('status'=>$status,'updated_at'=>date('Y-m-d H:i:s')));
+        $this->db->where('transfer_id',$transfer['id'])->update('transactions',array('status'=>$status));
+        $this->db->trans_complete();
+        return $this->db->trans_status();
     }
 
     public function set_transaction_status($id, $status)
     {
         if (!in_array($status,array('completed','failed','cancelled'),TRUE)) return FALSE;
+        $t=$this->db->where('id',(int)$id)->get('transactions')->row_array();
+        if(!$t)return FALSE;
+        // Transfer-linked transactions reconcile the actual money movement.
+        if(!empty($t['transfer_id'])){
+            if($status==='completed'){list($ok,$m)=$this->complete_transfer($t['transfer_id']);return $ok;}
+            if($status==='failed'||$status==='cancelled'){return $this->decline_transfer($t['transfer_id'],$status);}
+        }
         return $this->db->where('id',$id)->update('transactions',array('status'=>$status));
     }
 
