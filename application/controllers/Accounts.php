@@ -2,7 +2,7 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 class Accounts extends MY_Controller {
  public function __construct(){parent::__construct();$this->require_customer();}
- public function index(){$this->render('customer/accounts',array('title'=>'My accounts','accounts'=>$this->Bank_model->accounts($this->user['id'])));}
+ public function index(){$id=$this->user['id'];$s=$this->Bank_model->monthly_summary($id);$this->render('customer/accounts',array('title'=>'My accounts','accounts'=>$this->Bank_model->accounts($id),'summary'=>$s));}
  public function create(){
   if($this->input->method()==='post'){
    $this->form_validation->set_rules('name','Account name','trim|max_length[120]');

@@ -78,9 +78,10 @@ class Bank_model extends CI_Model
             'scheduled_for'=>$data['scheduled_for'], 'status'=>'pending', 'created_at'=>$now, 'updated_at'=>$now
         ));
         $transfer_id = $this->db->insert_id();
+        $category=in_array(($data['category'] ?? 'Transfer'), array('Transfer','Bill payment','Payment'), TRUE)?$data['category']:'Transfer';
         $this->db->insert('transactions', array(
-            'account_id'=>$account['id'], 'transfer_id'=>$transfer_id, 'reference'=>$reference, 'type'=>'debit', 'category'=>'Transfer',
-            'description'=>'Transfer to '.$data['recipient_name'], 'amount'=>$amount, 'currency'=>$account['currency'],
+            'account_id'=>$account['id'], 'transfer_id'=>$transfer_id, 'reference'=>$reference, 'type'=>'debit', 'category'=>$category,
+            'description'=>(($data['category'] ?? 'Transfer')==='Bill payment'?'Bill payment to ':'Transfer to ').$data['recipient_name'], 'amount'=>$amount, 'currency'=>$account['currency'],
             'balance_after'=>(float)$account['available_balance']-$amount, 'status'=>'pending', 'transaction_date'=>$data['scheduled_for'], 'created_at'=>$now
         ));
         $this->db->trans_complete();
@@ -156,6 +157,21 @@ class Bank_model extends CI_Model
         if ($this->db->where('user_id',$user_id)->count_all_results('customer_profiles')) $this->db->where('user_id',$user_id)->update('customer_profiles',$profile);
         else { $profile['user_id']=$user_id; $this->db->insert('customer_profiles',$profile); }
         $this->db->trans_complete(); return $this->db->trans_status();
+    }
+
+    public function spending_breakdown($user_id,$limit=4)
+    {
+        $this->db->select('a.user_id, t.category, SUM(t.amount) total')->from('transactions t')->join('accounts a','a.id=t.account_id')->where('a.user_id',$user_id)->where('t.type','debit')->where('t.status','completed');
+        $rows=$this->db->group_by('t.category')->order_by('total','DESC')->limit($limit)->get()->result_array();
+        return $rows;
+    }
+
+    public function monthly_summary($user_id)
+    {
+        $ym=date('Y-m');
+        $rows=$this->db->select('a.user_id, t.type, SUM(t.amount) total')->from('transactions t')->join('accounts a','a.id=t.account_id')->where('a.user_id',$user_id)->where('t.status','completed')->like('t.created_at',$ym.'%')->group_by('t.type')->get()->result_array();
+        $income=0;$expenses=0;foreach($rows as $r){if($r['type']==='credit')$income+=(float)$r['total'];else $expenses+=(float)$r['total'];}
+        return array('income'=>$income,'expenses'=>$expenses);
     }
 
     public function admin_metrics()

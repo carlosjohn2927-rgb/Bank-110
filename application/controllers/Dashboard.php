@@ -4,6 +4,11 @@ class Dashboard extends MY_Controller {
  public function __construct(){parent::__construct();$this->require_customer();}
  public function index(){
   $id=$this->user['id']; $accounts=$this->Bank_model->accounts($id);
-  $this->render('customer/dashboard',array('title'=>'Dashboard','accounts'=>$accounts,'total_balance'=>$this->Bank_model->total_balance($id),'transactions'=>$this->Bank_model->transactions_for_user($id,6)));
+  $summary=$this->Bank_model->monthly_summary($id);
+  $spending=$this->Bank_model->spending_breakdown($id,4);
+  $this->render('customer/dashboard',array(
+   'title'=>'Dashboard','accounts'=>$accounts,'total_balance'=>$this->Bank_model->total_balance($id),
+   'transactions'=>$this->Bank_model->transactions_for_user($id,6),'summary'=>$summary,'spending'=>$spending
+  ));
  }
 }
