@@ -12,13 +12,18 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Send a transactional email to a user, respecting their email_alerts
  * preference. Falls back to the recipient's stored email.
  */
-function notify_user($user_id, $subject, $content, $required_pref = 'email_alerts')
+function notify_user($user_id, $subject, $content, $required_pref = 'email_alerts', $type_pref = NULL)
 {
     $CI =& get_instance();
     try {
         $prefs = $CI->Bank_model->preferences((int)$user_id);
         if ($required_pref && (empty($prefs[$required_pref]) || $prefs[$required_pref] !== '1')) {
             // User has opted out of email alerts.
+            return FALSE;
+        }
+        // Per-category opt-out: e.g. $type_pref='notify_transfers' only sends
+        // when that toggle is on (defaults to on when unset).
+        if ($type_pref && isset($prefs[$type_pref]) && $prefs[$type_pref] !== '1') {
             return FALSE;
         }
         $user = $CI->Bank_model->profile((int)$user_id);

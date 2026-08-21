@@ -111,7 +111,7 @@ class Bank_model extends CI_Model
         ));
         $this->db->trans_complete();
         if ($this->db->trans_status() && function_exists('notify_user')) {
-            try { notify_user($user_id, 'Transfer '.$reference.' submitted', '<p>Your transfer of '.$this->money_local($amount, $account['currency']).' to '.htmlspecialchars($data['recipient_name']).' has been submitted and is being processed.</p><p>Reference: <b>'.$reference.'</b></p>'); } catch (Exception $e) {}
+            try { notify_user($user_id, 'Transfer '.$reference.' submitted', '<p>Your transfer of '.$this->money_local($amount, $account['currency']).' to '.htmlspecialchars($data['recipient_name']).' has been submitted and is being processed.</p><p>Reference: <b>'.$reference.'</b></p>','','notify_transfers'); } catch (Exception $e) {}
         }
         return $this->db->trans_status() ? array(TRUE, $reference) : array(FALSE, 'The transfer could not be submitted.');
     }
@@ -294,7 +294,7 @@ class Bank_model extends CI_Model
         $this->db->where('transfer_id',$transfer['id'])->update('transactions',array('status'=>'completed','balance_after'=>(float)$account['available_balance']-$total));
         $this->db->trans_complete();
         if($this->db->trans_status() && function_exists('notify_user')){
-            try{notify_user((int)$transfer['user_id'],'Transfer '.$transfer['reference'].' completed','<p>Your transfer of '.$this->money_local($transfer['amount'],$transfer['currency']).' to '.htmlspecialchars($transfer['recipient_name']).' has been completed.</p>');}catch(Exception $e){}
+            try{notify_user((int)$transfer['user_id'],'Transfer '.$transfer['reference'].' completed','<p>Your transfer of '.$this->money_local($transfer['amount'],$transfer['currency']).' to '.htmlspecialchars($transfer['recipient_name']).' has been completed.</p>','','notify_transfers');}catch(Exception $e){}
         }
         return $this->db->trans_status()?array(TRUE,$transfer['reference']):array(FALSE,'The transfer could not be completed.');
     }
@@ -379,7 +379,7 @@ class Bank_model extends CI_Model
         if ($this->db->trans_status() && function_exists('notify_user')) {
             try {
                 $t=$this->ticket($id);
-                if(!empty($t['email'])) notify_user((int)$t['user_id'], 'Update on support request '.$t['reference'], '<p>NorthWest support has replied to your request <b>'.$t['reference'].'</b>.</p><p><i>'.htmlspecialchars(substr($message,0,200)).'</i></p>');
+                if(!empty($t['email'])) notify_user((int)$t['user_id'], 'Update on support request '.$t['reference'], '<p>NorthWest support has replied to your request <b>'.$t['reference'].'</b>.</p><p><i>'.htmlspecialchars(substr($message,0,200)).'</i></p>','','notify_tickets');
             } catch (Exception $e) {}
         }
         return $this->db->trans_status();
