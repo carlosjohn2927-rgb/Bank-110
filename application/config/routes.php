@@ -48,6 +48,7 @@ $route['notifications'] = 'notifications/index';
 $route['settings/preferences'] = 'profile/preferences';
 $route['settings/password'] = 'profile/password';
 $route['settings/twofa'] = 'profile/twofa';
+$route['settings/kyc'] = 'profile/kyc';
 $route['chat'] = 'chat/index';
 $route['language/set'] = 'language/set';
 $route['scheduler/run'] = 'scheduler/run';

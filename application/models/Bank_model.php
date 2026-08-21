@@ -309,6 +309,11 @@ class Bank_model extends CI_Model
         return $this->db->where('user_id',(int)$user_id)->update('customer_profiles', array('kyc_status'=>$status,'updated_at'=>date('Y-m-d H:i:s')));
     }
 
+    public function request_kyc($user_id)
+    {
+        return $this->db->where('user_id',(int)$user_id)->update('customer_profiles', array('kyc_status'=>'pending','updated_at'=>date('Y-m-d H:i:s')));
+    }
+
     public function transaction_volume_7d()
     {
         $out=array();
