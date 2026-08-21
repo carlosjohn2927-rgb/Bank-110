@@ -25,6 +25,7 @@ $route['transactions'] = 'transactions/index';
 $route['transactions/statement'] = 'transactions/statement';
 $route['transfer'] = 'transfers/create';
 $route['transfers'] = 'transfers/index';
+$route['transfers/(:num)/cancel'] = 'transfers/cancel/$1';
 $route['bills'] = 'bills/index';
 $route['bills/pay'] = 'bills/pay';
 $route['beneficiaries'] = 'transfers/beneficiaries';

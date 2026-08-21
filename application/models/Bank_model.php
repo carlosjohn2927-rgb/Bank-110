@@ -57,6 +57,22 @@ class Bank_model extends CI_Model
         return (float) ($row['available_balance'] ?? 0);
     }
 
+    public function scheduled_transfers($user_id)
+    {
+        return $this->db->where('user_id',$user_id)->where('status','pending')->order_by('scheduled_for','ASC')->get('transfers')->result_array();
+    }
+
+    public function cancel_transfer($id, $user_id)
+    {
+        $t=$this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id,'status'=>'pending'))->get('transfers')->row_array();
+        if(!$t)return array(FALSE,'Scheduled transfer not found or already processed.');
+        $this->db->trans_start();
+        $this->db->where('id',$t['id'])->update('transfers',array('status'=>'cancelled','updated_at'=>date('Y-m-d H:i:s')));
+        $this->db->where('transfer_id',$t['id'])->update('transactions',array('status'=>'cancelled'));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,$t['reference']):array(FALSE,'Unable to cancel the transfer.');
+    }
+
     public function transfer_usage_today($user_id)
     {
         $row=$this->db->select('COALESCE(SUM(amount),0) total')->where('user_id',$user_id)->where('DATE(created_at)',date('Y-m-d'))->where('status !=','cancelled')->where('status !=','failed')->get('transfers')->row_array();

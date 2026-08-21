@@ -19,7 +19,7 @@ class Transfers extends MY_Controller {
    redirect('transfer');
   }
   $settings=$this->Bank_model->settings();
-  $this->render('customer/transfer',array('title'=>'Send money','accounts'=>$this->Bank_model->accounts($this->user['id']),'beneficiaries'=>$this->Bank_model->beneficiaries($this->user['id']),'daily_limit'=>(float)($settings['daily_transfer_limit']??25000),'used_today'=>$this->Bank_model->transfer_usage_today($this->user['id']),'intl_fee_pct'=>(float)($settings['international_fee_percent']??1.5),'intl_fee_flat'=>(float)($settings['international_fee_flat']??0)));
+  $this->render('customer/transfer',array('title'=>'Send money','accounts'=>$this->Bank_model->accounts($this->user['id']),'beneficiaries'=>$this->Bank_model->beneficiaries($this->user['id']),'daily_limit'=>(float)($settings['daily_transfer_limit']??25000),'used_today'=>$this->Bank_model->transfer_usage_today($this->user['id']),'intl_fee_pct'=>(float)($settings['international_fee_percent']??1.5),'intl_fee_flat'=>(float)($settings['international_fee_flat']??0),'scheduled'=>$this->Bank_model->scheduled_transfers($this->user['id'])));
  }
  public function beneficiaries(){
   if($this->input->method()==='post'){
@@ -39,4 +39,5 @@ class Transfers extends MY_Controller {
   if($this->input->method()!=='post')redirect('beneficiaries');
   if($this->Bank_model->delete_beneficiary((int)$id,$this->user['id'])){$this->session->set_flashdata('success','Beneficiary removed.');}else $this->session->set_flashdata('error','Beneficiary not found.');redirect('beneficiaries');
  }
+ public function cancel($id){if($this->input->method()!=='post')redirect('transfer');list($ok,$m)=$this->Bank_model->cancel_transfer((int)$id,$this->user['id']);if($ok){$this->Bank_model->audit('transfer_cancelled','Scheduled transfer '.$m.' cancelled',$this->user['id']);$this->session->set_flashdata('success','Scheduled transfer '.$m.' cancelled.');}else $this->session->set_flashdata('error',$m);redirect('transfer');}
 }
