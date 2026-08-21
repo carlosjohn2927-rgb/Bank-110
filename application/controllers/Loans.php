@@ -2,7 +2,7 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 class Loans extends MY_Controller {
  public function __construct(){parent::__construct();$this->require_customer();}
- public function index(){$this->render('customer/loans',array('title'=>'Loans & credit','loans'=>$this->Bank_model->loans($this->user['id']),'accounts'=>$this->Bank_model->accounts($this->user['id'])));}
+ public function index(){$this->render('customer/loans',array('title'=>'Loans & credit','loans'=>$this->Bank_model->loans($this->user['id']),'accounts'=>$this->Bank_model->accounts($this->user['id']),'total_balance'=>$this->Bank_model->total_balance($this->user['id'])));}
  public function pay($id){
   if($this->input->method()!=='post')redirect('loans');
   $this->form_validation->set_rules('account_id','Account','required|integer');

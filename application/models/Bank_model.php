@@ -246,11 +246,12 @@ class Bank_model extends CI_Model
         $user['accounts']=$this->accounts($id); $user['transactions']=$this->transactions_for_user($id,20); return $user;
     }
 
-    public function all_transactions($kind=NULL, $limit=100)
+    public function all_transactions($kind=NULL, $limit=100, $search=NULL)
     {
         $this->db->select('t.*, a.account_number, u.first_name, u.last_name')->from('transactions t')->join('accounts a','a.id=t.account_id')->join('users u','u.id=a.user_id');
         if ($kind === 'deposits') $this->db->where('t.type','credit');
         if ($kind === 'transfers') $this->db->where('t.category','Transfer');
+        if($search!==NULL && $search!=='')$this->db->group_start()->like('t.reference',$search)->or_like('t.description',$search)->or_like('t.category',$search)->or_like('u.first_name',$search)->or_like('u.last_name',$search)->group_end();
         return $this->db->order_by('t.created_at','DESC')->limit($limit)->get()->result_array();
     }
 
