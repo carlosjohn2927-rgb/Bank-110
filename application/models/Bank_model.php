@@ -381,6 +381,19 @@ class Bank_model extends CI_Model
     }
 
     public function all_cards() { return $this->db->select('c.*,u.first_name,u.last_name,a.account_number')->from('cards c')->join('users u','u.id=c.user_id')->join('accounts a','a.id=c.account_id')->order_by('c.created_at','DESC')->get()->result_array(); }
+
+    public function admin_create_card($data)
+    {
+        $account=$this->db->select('a.*,u.first_name,u.last_name')->from('accounts a')->join('users u','u.id=a.user_id')->where('a.id',(int)$data['account_id'])->get()->row_array();
+        if(!$account || $account['status']!=='active')return array(FALSE,'The selected account is unavailable.');
+        $now=date('Y-m-d H:i:s');$number=str_pad((string)random_int(0,9999999999999999),16,'0',STR_PAD_LEFT);$last_four=substr($number,-4);
+        $this->db->trans_start();
+        $this->db->insert('cards',array('user_id'=>$account['user_id'],'account_id'=>$account['id'],'cardholder_name'=>$account['first_name'].' '.$account['last_name'],'masked_number'=>'•••• •••• •••• '.$last_four,'last_four'=>$last_four,'expiry_month'=>random_int(1,12),'expiry_year'=>(int)date('Y')+random_int(3,5),'card_type'=>in_array($data['card_type'],array('virtual','physical'),TRUE)?$data['card_type']:'physical','network'=>'Visa','status'=>'active','is_frozen'=>0,'online_enabled'=>1,'international_enabled'=>1,'daily_limit'=>round((float)($data['daily_limit']?:10000),2),'created_at'=>$now,'updated_at'=>$now));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,'Card ending in '.$last_four.' issued.'):array(FALSE,'Unable to issue the card.');
+    }
+
+    public function customers_with_accounts(){return $this->db->select('a.id account_id,u.id,a.name account_name,a.account_number,u.first_name,u.last_name')->from('accounts a')->join('users u','u.id=a.user_id')->where('u.role','customer')->where('a.status','active')->order_by('u.first_name')->get()->result_array();}
     public function all_loans() { return $this->db->select('l.*,u.first_name,u.last_name')->from('loans l')->join('users u','u.id=l.user_id')->order_by('l.created_at','DESC')->get()->result_array(); }
 
     public function create_account($user_id, $data)

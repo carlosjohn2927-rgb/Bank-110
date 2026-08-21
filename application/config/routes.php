@@ -46,6 +46,7 @@ $route['scheduler/run'] = 'scheduler/run';
 $route['admin/dashboard'] = 'admin/dashboard';
 $route['admin/customers'] = 'admin/customers';
 $route['admin/customers/create'] = 'admin/customer_create';
+$route['admin/customers/export'] = 'admin/export_customers';
 $route['admin/customers/(:num)'] = 'admin/customer/$1';
 $route['admin/customers/(:num)/status'] = 'admin/customer_status/$1';
 $route['admin/customers/(:num)/adjust'] = 'admin/customer_adjust/$1';
