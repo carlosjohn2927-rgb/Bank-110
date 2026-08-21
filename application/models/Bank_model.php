@@ -64,6 +64,23 @@ class Bank_model extends CI_Model
         return $this->db->insert('beneficiaries', $data);
     }
 
+    public function beneficiary($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->get('beneficiaries')->row_array();
+    }
+
+    public function update_beneficiary($id, $user_id, $data)
+    {
+        if(!$this->beneficiary($id,$user_id))return FALSE;
+        $data['created_at'] = date('Y-m-d H:i:s');
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->update('beneficiaries', $data);
+    }
+
+    public function delete_beneficiary($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->delete('beneficiaries');
+    }
+
     public function create_transfer($user_id, $data)
     {
         $account = $this->account($data['from_account_id'], $user_id);

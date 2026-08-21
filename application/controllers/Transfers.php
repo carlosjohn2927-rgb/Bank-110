@@ -29,4 +29,14 @@ class Transfers extends MY_Controller {
   }
   $this->render('customer/beneficiaries',array('title'=>'Beneficiaries','beneficiaries'=>$this->Bank_model->beneficiaries($this->user['id'])));
  }
+ public function beneficiary_update($id){
+  if($this->input->method()!=='post')redirect('beneficiaries');
+  $this->form_validation->set_rules('name','Name','required|trim|max_length[120]');$this->form_validation->set_rules('account_number','Account number','required|trim|max_length[50]');$this->form_validation->set_rules('bank_name','Bank','required|trim|max_length[120]');
+  if($this->form_validation->run()){if($this->Bank_model->update_beneficiary((int)$id,$this->user['id'],array('name'=>$this->input->post('name',TRUE),'account_number'=>$this->input->post('account_number',TRUE),'bank_name'=>$this->input->post('bank_name',TRUE),'routing_code'=>$this->input->post('routing_code',TRUE),'currency'=>$this->input->post('currency',TRUE)?:'USD'))){$this->session->set_flashdata('success','Beneficiary updated.');}else $this->session->set_flashdata('error','Beneficiary not found.');}
+  else $this->session->set_flashdata('error',validation_errors('',' '));redirect('beneficiaries');
+ }
+ public function beneficiary_delete($id){
+  if($this->input->method()!=='post')redirect('beneficiaries');
+  if($this->Bank_model->delete_beneficiary((int)$id,$this->user['id'])){$this->session->set_flashdata('success','Beneficiary removed.');}else $this->session->set_flashdata('error','Beneficiary not found.');redirect('beneficiaries');
+ }
 }
