@@ -353,7 +353,9 @@ class Bank_model extends CI_Model
     public function customer_detail($id)
     {
         $user=$this->profile($id); if(!$user || $user['role']!=='customer') return NULL;
-        $user['accounts']=$this->accounts($id); $user['transactions']=$this->transactions_for_user($id,20); return $user;
+        $user['accounts']=$this->accounts($id); $user['transactions']=$this->transactions_for_user($id,20);
+        $user['cards']=$this->cards($id); $user['loans']=$this->loans($id); $user['tickets']=$this->tickets($id);
+        return $user;
     }
 
     public function count_all_transactions($kind=NULL, $search=NULL)
