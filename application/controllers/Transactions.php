@@ -19,6 +19,7 @@ class Transactions extends MY_Controller {
   $offset=((int)max(1,$page)-1)*$per_page;
   $this->render('customer/transactions',array('title'=>'Transactions','transactions'=>$this->Bank_model->transactions_for_user($this->user['id'],$per_page,$filters,$offset),'filters'=>$filters,'pagination'=>$this->pagination->create_links(),'total'=>$total,'per_page'=>$per_page));
  }
+ public function view($id){$tx=$this->Bank_model->transaction_for_user((int)$id,$this->user['id']);if(!$tx)show_404();$this->render('customer/transaction',array('title'=>'Transaction '.$tx['reference'],'tx'=>$tx));}
  public function statement(){
   $filters=array('search'=>$this->input->get('q',TRUE),'type'=>$this->input->get('type',TRUE));
   $rows=$this->Bank_model->transactions_for_user($this->user['id'],1000,$filters);

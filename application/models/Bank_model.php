@@ -87,6 +87,14 @@ class Bank_model extends CI_Model
         return $this->db->count_all_results();
     }
 
+    public function transaction_for_user($id, $user_id)
+    {
+        $this->db->select('t.*, a.account_number, a.name account_name, a.type account_type')->from('transactions t')->join('accounts a','a.id=t.account_id')->where('t.id',(int)$id)->where('a.user_id',(int)$user_id);
+        $t=$this->db->get()->row_array();
+        if($t) $t['transfer']=$this->db->where('id',$t['transfer_id'])->get('transfers')->row_array();
+        return $t;
+    }
+
     public function transactions_for_user($user_id, $limit = 50, $filters = array(), $offset = 0)
     {
         $this->db->select('t.*, a.account_number, a.name account_name')->from('transactions t')->join('accounts a', 'a.id=t.account_id')->where('a.user_id', $user_id);
