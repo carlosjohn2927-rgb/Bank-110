@@ -36,10 +36,10 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Open new accounts (checking, savings, investment) with optional opening deposit
 - In-account deposits
 - Searchable transactions with CSV statement download
-- Database-transaction-backed transfers (internal / domestic / international tabs) with configurable international transfer fees
+- Database-transaction-backed transfers (internal / domestic / international tabs) with configurable international transfer fees and admin-approved completion (money moves on approval, not submission)
 - Multi-currency exchange between own accounts (rates managed by admins)
 - Bill payment to saved payees
-- Beneficiary management
+- Beneficiary management (add, edit, delete)
 - Card issuance (virtual / physical) and security controls
 - Loan applications (amortized) and loan payments
 - Scheduled transfers (processed by a cron endpoint)
@@ -47,6 +47,7 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Customer profile, avatar uploads, notification/region preferences, and password change
 - Configurable daily transfer limit with real-time usage tracking and enforcement
 - Optional two-factor authentication (email OTP) at sign-in
+- Account freeze/close, report lost/stolen card, scheduled-transfer management (list & cancel), and granular notification toggles
 - KYC verification status visible to customers and managed by admins
 - Public self-service registration (toggle from Admin → System settings)
 - Multi-language UI (English, Deutsch, Français) with a language switcher in the header and on login pages
