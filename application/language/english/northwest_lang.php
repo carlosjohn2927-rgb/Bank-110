@@ -42,3 +42,68 @@ $lang['common_search']     = 'Search';
 $lang['common_account']    = 'Account';
 $lang['common_amount']     = 'Amount';
 $lang['common_save']       = 'Save';
+
+// Accounts
+$lang['accounts_title']     = 'My accounts';
+$lang['accounts_sub']       = 'View, open and fund all your NorthWest accounts.';
+$lang['open_account']       = 'Open new account';
+$lang['deposit']            = 'Deposit';
+$lang['account_details']    = 'Account details';
+$lang['total_assets']       = 'Total assets';
+$lang['monthly_income']     = 'Monthly income';
+$lang['monthly_expenses']   = 'Monthly expenses';
+$lang['active_accounts']    = 'Active accounts';
+$lang['account_number']     = 'Account number';
+$lang['routing_number']     = 'Routing number';
+
+// Transactions
+$lang['tx_title']           = 'Transactions';
+$lang['tx_sub']             = 'Search, filter and review your account activity.';
+$lang['download_statement'] = 'Download statement';
+$lang['all_types']          = 'All types';
+$lang['credits']            = 'Credits';
+$lang['debits']             = 'Debits';
+$lang['filter']             = 'Filter';
+$lang['col_transaction']    = 'Transaction';
+$lang['col_date']           = 'Date';
+$lang['col_account']        = 'Account';
+$lang['col_amount']         = 'Amount';
+$lang['col_status']         = 'Status';
+
+// Send money
+$lang['send_title']         = 'Send money';
+$lang['send_sub']           = 'Move money securely, wherever it needs to go.';
+
+// Cards
+$lang['cards_title']        = 'Your cards';
+$lang['cards_sub']          = 'Control your cards, limits and security.';
+$lang['add_card']           = 'Add a card';
+
+// Loans
+$lang['loans_title']        = 'Loans & credit';
+$lang['loans_sub']          = 'Manage your borrowing and explore personalized offers.';
+$lang['apply_loan']         = 'Apply for a loan';
+
+// Bills
+$lang['bills_title']        = 'Pay a bill';
+$lang['bills_sub']          = 'Pay a saved payee directly from your account.';
+$lang['pay_bill']           = 'Pay bill';
+
+// Exchange
+$lang['exchange_title']     = 'Currency exchange';
+$lang['exchange_sub']       = 'Convert money between your accounts in different currencies.';
+$lang['exchange_currency']  = 'Exchange currency';
+
+// Support
+$lang['support_title']      = 'How can we help?';
+$lang['support_sub']        = 'Find answers or connect with our support team.';
+$lang['start_conversation'] = 'Start a conversation';
+$lang['your_requests']      = 'Your requests';
+
+// Settings
+$lang['settings_title']     = 'Settings';
+$lang['settings_sub']       = 'Manage your personal details, notifications, security and region.';
+$lang['personal_info']      = 'Personal information';
+$lang['notifications']      = 'Notifications';
+$lang['security_login']     = 'Security & login';
+$lang['language_region']    = 'Language & region';

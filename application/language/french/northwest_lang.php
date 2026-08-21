@@ -42,3 +42,68 @@ $lang['common_search']     = 'Rechercher';
 $lang['common_account']    = 'Compte';
 $lang['common_amount']     = 'Montant';
 $lang['common_save']       = 'Enregistrer';
+
+// Accounts
+$lang['accounts_title']     = 'Mes comptes';
+$lang['accounts_sub']       = 'Consultez, ouvrez et approvisionnez tous vos comptes NorthWest.';
+$lang['open_account']       = 'Ouvrir un compte';
+$lang['deposit']            = 'Dépôt';
+$lang['account_details']    = 'Détails du compte';
+$lang['total_assets']       = 'Actif total';
+$lang['monthly_income']     = 'Revenu mensuel';
+$lang['monthly_expenses']   = 'Dépenses mensuelles';
+$lang['active_accounts']    = 'Comptes actifs';
+$lang['account_number']     = 'Numéro de compte';
+$lang['routing_number']     = 'Numéro de routage';
+
+// Transactions
+$lang['tx_title']           = 'Transactions';
+$lang['tx_sub']             = 'Recherchez, filtrez et consultez votre activité.';
+$lang['download_statement'] = 'Télécharger le relevé';
+$lang['all_types']          = 'Tous les types';
+$lang['credits']            = 'Crédits';
+$lang['debits']             = 'Débits';
+$lang['filter']             = 'Filtrer';
+$lang['col_transaction']    = 'Transaction';
+$lang['col_date']           = 'Date';
+$lang['col_account']        = 'Compte';
+$lang['col_amount']         = 'Montant';
+$lang['col_status']         = 'Statut';
+
+// Send money
+$lang['send_title']         = 'Envoyer de l\'argent';
+$lang['send_sub']           = 'Déplacez votre argent en toute sécurité.';
+
+// Cards
+$lang['cards_title']        = 'Vos cartes';
+$lang['cards_sub']          = 'Contrôlez vos cartes, limites et sécurité.';
+$lang['add_card']           = 'Ajouter une carte';
+
+// Loans
+$lang['loans_title']        = 'Prêts & crédit';
+$lang['loans_sub']          = 'Gérez vos emprunts et explorez des offres.';
+$lang['apply_loan']         = 'Demander un prêt';
+
+// Bills
+$lang['bills_title']        = 'Payer une facture';
+$lang['bills_sub']          = 'Payez un bénéficiaire enregistré.';
+$lang['pay_bill']           = 'Payer';
+
+// Exchange
+$lang['exchange_title']     = 'Change de devises';
+$lang['exchange_sub']       = 'Convertissez de l\'argent entre vos comptes en différentes devises.';
+$lang['exchange_currency']  = 'Changer de devise';
+
+// Support
+$lang['support_title']      = 'Comment pouvons-nous aider ?';
+$lang['support_sub']        = 'Trouvez des réponses ou contactez notre équipe.';
+$lang['start_conversation'] = 'Démarrer une conversation';
+$lang['your_requests']      = 'Vos demandes';
+
+// Settings
+$lang['settings_title']     = 'Paramètres';
+$lang['settings_sub']       = 'Gérez vos informations, notifications, sécurité et région.';
+$lang['personal_info']      = 'Informations personnelles';
+$lang['notifications']      = 'Notifications';
+$lang['security_login']     = 'Sécurité & connexion';
+$lang['language_region']    = 'Langue & région';
