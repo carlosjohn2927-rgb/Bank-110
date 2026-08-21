@@ -519,6 +519,27 @@ class Bank_model extends CI_Model
         return $this->db->trans_status();
     }
 
+    public function loan_schedule($loan)
+    {
+        $schedule=array();
+        $principal=(float)$loan['principal'];
+        $outstanding=(float)$loan['outstanding_balance'];
+        $monthly=(float)$loan['monthly_payment'];
+        $rate=(float)$loan['interest_rate']/100/12;
+        $remaining=(int)$loan['payments_remaining'];
+        $start=date('Y-m-01',strtotime($loan['next_payment_date']));
+        $made=(int)$loan['term_months']-(int)$loan['payments_remaining'];
+        for($i=0;$i<$remaining && $outstanding>0.005;$i++){
+            $interest=$outstanding*$rate;
+            $payment=min($monthly,$outstanding+$interest);
+            $to_principal=max(0,$payment-$interest);
+            $outstanding=max(0,$outstanding-$to_principal);
+            $due=date('Y-m-d',strtotime($start.' +'.($made+$i).' months'));
+            $schedule[]=array('due'=>$due,'payment'=>round($payment,2),'interest'=>round($interest,2),'principal'=>round($to_principal,2),'balance'=>round($outstanding,2));
+        }
+        return $schedule;
+    }
+
     public function pay_loan($loan_id, $user_id, $account_id)
     {
         $loan=$this->db->where(array('id'=>(int)$loan_id,'user_id'=>$user_id))->get('loans')->row_array();
