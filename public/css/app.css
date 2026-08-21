@@ -134,3 +134,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#1468e5;box-sh
 .tabs span{color:#7e8c9c}
 .tabs span:hover{color:#1468e5}
 .tabs b.active,.tabs span.active{color:#1468e5;border-bottom:2px solid #1468e5}
+
+/* KYC badges & status */
+.kyc-badge{font-size:10px;font-weight:800;letter-spacing:.4px;padding:5px 10px;border-radius:999px;text-transform:uppercase}
+.kyc-pending{background:#fff3d6;color:#b77800}
+.kyc-verified{background:#e5f6ef;color:#168059}
+.kyc-rejected{background:#ffebee;color:#c53d4d}
+.kyc-status{display:flex;align-items:center;gap:13px;padding:18px 0;border-bottom:1px solid var(--line);margin-bottom:18px}
+.kyc-status>div{display:flex;flex-direction:column}
+.kyc-status b{font-size:13px}
+.kyc-status small{font-size:11px;color:#8493a4;margin-top:3px}

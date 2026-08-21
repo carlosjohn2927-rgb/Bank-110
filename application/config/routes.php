@@ -44,6 +44,7 @@ $route['admin/customers/create'] = 'admin/customer_create';
 $route['admin/customers/(:num)'] = 'admin/customer/$1';
 $route['admin/customers/(:num)/status'] = 'admin/customer_status/$1';
 $route['admin/customers/(:num)/adjust'] = 'admin/customer_adjust/$1';
+$route['admin/customers/(:num)/kyc'] = 'admin/kyc/$1';
 $route['admin/transactions'] = 'admin/transactions';
 $route['admin/transactions/(:num)/status'] = 'admin/transaction_status/$1';
 $route['admin/transfers'] = 'admin/transfers';

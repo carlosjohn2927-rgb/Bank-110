@@ -147,7 +147,7 @@ class Bank_model extends CI_Model
 
     public function profile($user_id)
     {
-        return $this->db->select('u.*, cp.phone, cp.address, cp.city, cp.country, cp.date_of_birth')->from('users u')->join('customer_profiles cp','cp.user_id=u.id','left')->where('u.id',$user_id)->get()->row_array();
+        return $this->db->select('u.*, cp.phone, cp.address, cp.city, cp.country, cp.date_of_birth, cp.kyc_status')->from('users u')->join('customer_profiles cp','cp.user_id=u.id','left')->where('u.id',$user_id)->get()->row_array();
     }
 
     public function update_profile($user_id, $user, $profile)
@@ -172,6 +172,33 @@ class Bank_model extends CI_Model
         $rows=$this->db->select('a.user_id, t.type, SUM(t.amount) total')->from('transactions t')->join('accounts a','a.id=t.account_id')->where('a.user_id',$user_id)->where('t.status','completed')->like('t.created_at',$ym.'%')->group_by('t.type')->get()->result_array();
         $income=0;$expenses=0;foreach($rows as $r){if($r['type']==='credit')$income+=(float)$r['total'];else $expenses+=(float)$r['total'];}
         return array('income'=>$income,'expenses'=>$expenses);
+    }
+
+    public function update_kyc_status($user_id, $status)
+    {
+        if (!in_array($status, array('pending','verified','rejected'), TRUE)) return FALSE;
+        return $this->db->where('user_id',(int)$user_id)->update('customer_profiles', array('kyc_status'=>$status,'updated_at'=>date('Y-m-d H:i:s')));
+    }
+
+    public function transaction_volume_7d()
+    {
+        $out=array();
+        for($i=6;$i>=0;$i--){
+            $day=date('Y-m-d',strtotime("-{$i} days"));
+            $count=$this->db->where('DATE(created_at)',$day)->count_all_results('transactions');
+            $out[]=array('label'=>date('D',strtotime($day)),'value'=>(int)$count);
+        }
+        return $out;
+    }
+
+    public function account_distribution()
+    {
+        $rows=$this->db->select('type, COUNT(*) c')->group_by('type')->get('accounts')->result_array();
+        $out=array('checking'=>0,'savings'=>0,'investment'=>0);
+        foreach($rows as $r){if(isset($out[$r['type']]))$out[$r['type']]=(int)$r['c'];else $out[$r['type']]=(int)$r['c'];}
+        $total=array_sum($out)?:1;
+        $pct=function($k)use($out,$total){return round($out[$k]/$total*100);};
+        return array('checking'=>$pct('checking'),'savings'=>$pct('savings'),'investment'=>$pct('investment'),'total'=>array_sum($out));
     }
 
     public function admin_metrics()
@@ -328,6 +355,21 @@ class Bank_model extends CI_Model
         }
         $this->db->trans_complete();
         return $this->db->trans_status()?$account_id:FALSE;
+    }
+
+    public function admin_issue_loan($data)
+    {
+        $user=$this->db->select('id')->where('id',(int)$data['user_id'])->where('role','customer')->get('users')->row_array();
+        if(!$user)return array(FALSE,'Select a valid customer.');
+        $amount=round((float)$data['amount'],2);$term=max(6,min(120,(int)$data['term_months']));
+        if($amount<=0)return array(FALSE,'Enter a valid amount.');
+        $rate=round((float)($data['interest_rate'] ?: 6.25),3);
+        $r=$rate/100/12;$payment=$r==0?$amount/$term:$amount*$r*pow(1+$r,$term)/(pow(1+$r,$term)-1);$payment=round($payment,2);
+        $now=date('Y-m-d H:i:s');$reference='NW-LN-'.random_int(100000,999999);
+        $this->db->trans_start();
+        $this->db->insert('loans',array('user_id'=>$user['id'],'reference'=>$reference,'type'=>trim($data['type'] ?: 'Personal loan'),'principal'=>$amount,'outstanding_balance'=>$amount,'interest_rate'=>$rate,'monthly_payment'=>$payment,'next_payment_date'=>date('Y-m-d',strtotime('+1 month')),'term_months'=>$term,'payments_remaining'=>$term,'status'=>'active','created_at'=>$now,'updated_at'=>$now));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'Unable to create the loan.');
     }
 
     public function admins()
