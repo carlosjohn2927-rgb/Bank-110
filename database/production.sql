@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS beneficiaries (
 
 CREATE TABLE IF NOT EXISTS transfers (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, reference VARCHAR(40) NOT NULL UNIQUE, user_id BIGINT UNSIGNED NOT NULL, from_account_id BIGINT UNSIGNED NOT NULL, beneficiary_id BIGINT UNSIGNED NULL,
- recipient_name VARCHAR(120) NOT NULL, recipient_account VARCHAR(60) NOT NULL, recipient_bank VARCHAR(120) NOT NULL, transfer_type ENUM('internal','domestic','international') NOT NULL,
+ recipient_name VARCHAR(120) NOT NULL, recipient_account VARCHAR(60) NOT NULL, recipient_bank VARCHAR(120) NOT NULL, recipient_routing VARCHAR(60) NULL, transfer_type ENUM('internal','domestic','international') NOT NULL,
  amount DECIMAL(18,2) NOT NULL, currency CHAR(3) NOT NULL, fee DECIMAL(18,2) NOT NULL DEFAULT 0, note VARCHAR(255), scheduled_for DATE NOT NULL,
  status ENUM('pending','processing','completed','failed','cancelled') NOT NULL DEFAULT 'pending', approved_by BIGINT UNSIGNED NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
  INDEX idx_transfer_user(user_id), INDEX idx_transfer_status(status), CONSTRAINT fk_transfer_user FOREIGN KEY(user_id) REFERENCES users(id),
@@ -123,6 +123,11 @@ CREATE TABLE IF NOT EXISTS notification_templates (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, template_key VARCHAR(100) NOT NULL UNIQUE, channel ENUM('email','sms','system') NOT NULL, subject VARCHAR(190), body TEXT NOT NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SET NAMES utf8mb4;
+
+-- Add recipient_routing column to transfers if missing (safe for existing installs).
+SET @has_routing := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='transfers' AND column_name='recipient_routing');
+SET @ddl2 := IF(@has_routing = 0, 'ALTER TABLE transfers ADD COLUMN recipient_routing VARCHAR(60) NULL AFTER recipient_bank', 'SELECT 1');
+PREPARE stmt2 FROM @ddl2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
 
 -- Add twofa_enabled column to users if missing (safe for existing installs).
 SET @has_twofa := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='users' AND column_name='twofa_enabled');

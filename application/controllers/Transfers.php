@@ -11,14 +11,15 @@ class Transfers extends MY_Controller {
    $this->form_validation->set_rules('recipient_bank','Recipient bank','required|trim|max_length[120]');
    $this->form_validation->set_rules('amount','Amount','required|numeric|greater_than[0]');
    if($this->form_validation->run()){
-    $data=array('from_account_id'=>$this->input->post('from_account_id'),'beneficiary_id'=>$this->input->post('beneficiary_id') ?: NULL,'recipient_name'=>$this->input->post('recipient_name',TRUE),'recipient_account'=>$this->input->post('recipient_account',TRUE),'recipient_bank'=>$this->input->post('recipient_bank',TRUE),'transfer_type'=>$this->input->post('transfer_type',TRUE) ?: 'domestic','amount'=>$this->input->post('amount'),'note'=>$this->input->post('note',TRUE),'scheduled_for'=>$this->input->post('scheduled_for') ?: date('Y-m-d'));
+    $data=array('from_account_id'=>$this->input->post('from_account_id'),'beneficiary_id'=>$this->input->post('beneficiary_id') ?: NULL,'recipient_name'=>$this->input->post('recipient_name',TRUE),'recipient_account'=>$this->input->post('recipient_account',TRUE),'recipient_bank'=>$this->input->post('recipient_bank',TRUE),'recipient_routing'=>$this->input->post('swift_code',TRUE),'transfer_type'=>$this->input->post('transfer_type',TRUE) ?: 'domestic','amount'=>$this->input->post('amount'),'note'=>$this->input->post('note',TRUE),'scheduled_for'=>$this->input->post('scheduled_for') ?: date('Y-m-d'));
     list($ok,$message)=$this->Bank_model->create_transfer($this->user['id'],$data);
     if($ok){$this->Bank_model->audit('transfer_created','Transfer '.$message.' submitted',$this->user['id']);$this->session->set_flashdata('success','Transfer submitted. Reference: '.$message);redirect('transactions');}
     $this->session->set_flashdata('error',$message);
    } else $this->session->set_flashdata('error',validation_errors('',' '));
    redirect('transfer');
   }
-  $this->render('customer/transfer',array('title'=>'Send money','accounts'=>$this->Bank_model->accounts($this->user['id']),'beneficiaries'=>$this->Bank_model->beneficiaries($this->user['id'])));
+  $settings=$this->Bank_model->settings();
+  $this->render('customer/transfer',array('title'=>'Send money','accounts'=>$this->Bank_model->accounts($this->user['id']),'beneficiaries'=>$this->Bank_model->beneficiaries($this->user['id']),'daily_limit'=>(float)($settings['daily_transfer_limit']??25000),'used_today'=>$this->Bank_model->transfer_usage_today($this->user['id'])));
  }
  public function beneficiaries(){
   if($this->input->method()==='post'){

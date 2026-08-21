@@ -39,6 +39,12 @@ class Bank_model extends CI_Model
         return (float) ($row['available_balance'] ?? 0);
     }
 
+    public function transfer_usage_today($user_id)
+    {
+        $row=$this->db->select('COALESCE(SUM(amount),0) total')->where('user_id',$user_id)->where('DATE(created_at)',date('Y-m-d'))->where('status !=','cancelled')->where('status !=','failed')->get('transfers')->row_array();
+        return (float)($row['total'] ?? 0);
+    }
+
     public function transactions_for_user($user_id, $limit = 50, $filters = array())
     {
         $this->db->select('t.*, a.account_number, a.name account_name')->from('transactions t')->join('accounts a', 'a.id=t.account_id')->where('a.user_id', $user_id);
@@ -65,16 +71,23 @@ class Bank_model extends CI_Model
         if (!$account || $account['status'] !== 'active') return array(FALSE, 'The selected account is unavailable.');
         if ($amount <= 0) return array(FALSE, 'Enter a valid transfer amount.');
         if ($amount > (float) $account['available_balance']) return array(FALSE, 'Insufficient available balance.');
-        if ($amount > 25000) return array(FALSE, 'This transfer exceeds your daily limit.');
+        try{$settings=$this->settings();$daily=(float)($settings['daily_transfer_limit']??25000);}catch(Exception $e){$daily=25000;}
+        if ($amount > $daily) return array(FALSE, 'This transfer exceeds your daily limit of '.number_format($daily).'.');
+        if (($amount + $this->transfer_usage_today($user_id)) > $daily) return array(FALSE, 'This transfer would exceed your remaining daily limit.');
 
         $reference = 'NW-'.date('ymd').'-'.random_int(100000, 999999);
         $now = date('Y-m-d H:i:s');
         $this->db->trans_start();
         $this->db->where('id', $account['id'])->set('balance', 'balance-'.$amount, FALSE)->set('available_balance', 'available_balance-'.$amount, FALSE)->update('accounts');
+        $routing=$data['recipient_routing'] ?? '';
+        if($routing==='' && !empty($data['beneficiary_id'])){
+            $b=$this->db->select('routing_code')->where('id',(int)$data['beneficiary_id'])->get('beneficiaries')->row_array();
+            if($b)$routing=$b['routing_code'];
+        }
         $this->db->insert('transfers', array(
             'reference'=>$reference, 'user_id'=>$user_id, 'from_account_id'=>$account['id'], 'beneficiary_id'=>$data['beneficiary_id'] ?: NULL,
             'recipient_name'=>$data['recipient_name'], 'recipient_account'=>$data['recipient_account'], 'recipient_bank'=>$data['recipient_bank'],
-            'transfer_type'=>$data['transfer_type'], 'amount'=>$amount, 'currency'=>$account['currency'], 'fee'=>0, 'note'=>$data['note'],
+            'recipient_routing'=>$routing ?: NULL, 'transfer_type'=>$data['transfer_type'], 'amount'=>$amount, 'currency'=>$account['currency'], 'fee'=>0, 'note'=>$data['note'],
             'scheduled_for'=>$data['scheduled_for'], 'status'=>'pending', 'created_at'=>$now, 'updated_at'=>$now
         ));
         $transfer_id = $this->db->insert_id();
