@@ -242,6 +242,10 @@ class Bank_model extends CI_Model
         $metrics['deposits'] = (float)($this->db->select_sum('available_balance')->get('accounts')->row()->available_balance ?? 0);
         $metrics['transactions_today'] = $this->db->where('DATE(created_at)',date('Y-m-d'))->count_all_results('transactions');
         $metrics['pending'] = $this->db->where('status','pending')->count_all_results('transfers');
+        $metrics['scheduled'] = $this->db->where('status','pending')->where('scheduled_for >',date('Y-m-d'))->count_all_results('transfers');
+        $metrics['pending_deposits'] = $this->db->where('status','pending')->where('type','credit')->count_all_results('transactions');
+        $metrics['cards'] = $this->db->count_all_results('cards');
+        $metrics['active_loans'] = $this->db->where('status','active')->count_all_results('loans');
         return $metrics;
     }
 
