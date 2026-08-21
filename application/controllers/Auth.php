@@ -60,8 +60,10 @@ class Auth extends MY_Controller
                 $token = $this->Bank_model->create_password_reset($this->input->post('email', TRUE));
                 if ($token) {
                     $this->Bank_model->audit('password_reset_requested','Password reset link generated');
-                    // In production the link is emailed; here we surface it once so the flow is usable.
-                    $this->session->set_flashdata('reset_link', site_url('reset/'.$token));
+                    $reset_url = site_url('reset/'.$token);
+                    $sent = function_exists('send_notification_email') && send_notification_email($this->input->post('email', TRUE), 'Reset your NorthWest password', '<p>Use this secure link to reset your password. It expires in 30 minutes:</p><p><a href="'.htmlspecialchars($reset_url).'" style="display:inline-block;background:#1468e5;color:#fff;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:700">Reset password</a></p><p>If you didn\'t request this, you can safely ignore this email.</p>');
+                    // If email isn't configured, still surface the link once so the flow is usable.
+                    if (!$sent) $this->session->set_flashdata('reset_link', $reset_url);
                     redirect('forgot?sent=1');
                 }
                 $this->session->set_flashdata('error', 'No active account is associated with that email.');

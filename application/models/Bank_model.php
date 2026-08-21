@@ -85,7 +85,16 @@ class Bank_model extends CI_Model
             'balance_after'=>(float)$account['available_balance']-$amount, 'status'=>'pending', 'transaction_date'=>$data['scheduled_for'], 'created_at'=>$now
         ));
         $this->db->trans_complete();
+        if ($this->db->trans_status() && function_exists('notify_user')) {
+            try { notify_user($user_id, 'Transfer '.$reference.' submitted', '<p>Your transfer of '.$this->money_local($amount, $account['currency']).' to '.htmlspecialchars($data['recipient_name']).' has been submitted and is being processed.</p><p>Reference: <b>'.$reference.'</b></p>'); } catch (Exception $e) {}
+        }
         return $this->db->trans_status() ? array(TRUE, $reference) : array(FALSE, 'The transfer could not be submitted.');
+    }
+
+    private function money_local($amount, $currency = 'USD')
+    {
+        $symbols = array('USD' => '$', 'EUR' => '€', 'GBP' => '£');
+        return ($symbols[$currency] ?? $currency.' ').number_format((float) $amount, 2);
     }
 
     public function cards($user_id)
@@ -285,7 +294,14 @@ class Bank_model extends CI_Model
         $this->db->trans_start();
         $this->db->insert('ticket_messages',array('ticket_id'=>$id,'user_id'=>$admin_id,'message'=>$message,'is_staff'=>1,'created_at'=>$now));
         $this->db->where('id',$id)->update('support_tickets',array('status'=>$status,'assigned_to'=>$admin_id,'updated_at'=>$now));
-        $this->db->trans_complete(); return $this->db->trans_status();
+        $this->db->trans_complete();
+        if ($this->db->trans_status() && function_exists('notify_user')) {
+            try {
+                $t=$this->ticket($id);
+                if(!empty($t['email'])) notify_user((int)$t['user_id'], 'Update on support request '.$t['reference'], '<p>NorthWest support has replied to your request <b>'.$t['reference'].'</b>.</p><p><i>'.htmlspecialchars(substr($message,0,200)).'</i></p>');
+            } catch (Exception $e) {}
+        }
+        return $this->db->trans_status();
     }
 
     public function pay_loan($loan_id, $user_id, $account_id)
