@@ -30,6 +30,8 @@ $route['loans/create'] = 'loans/create';
 $route['support'] = 'support/index';
 $route['support/create'] = 'support/create';
 $route['settings'] = 'profile/index';
+$route['settings/preferences'] = 'profile/preferences';
+$route['settings/password'] = 'profile/password';
 $route['chat'] = 'chat/index';
 
 $route['admin/dashboard'] = 'admin/dashboard';
@@ -49,3 +51,4 @@ $route['admin/tickets/(:num)'] = 'admin/ticket/$1';
 $route['admin/tickets/(:num)/reply'] = 'admin/ticket_reply/$1';
 $route['admin/tutorial'] = 'admin/tutorial';
 $route['admin/settings'] = 'admin/settings';
+$route['admin/admin_users'] = 'admin/admin_users';

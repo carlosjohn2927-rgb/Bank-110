@@ -26,7 +26,25 @@ class MY_Controller extends CI_Controller
         $data['content_view'] = $view;
         $data['flash_success'] = $this->session->flashdata('success');
         $data['flash_error'] = $this->session->flashdata('error');
+        $data['notifications'] = $this->recent_notifications();
         $this->load->view($layout, $data);
+    }
+
+    /**
+     * Recent activity for the header bell — the last few transactions the user
+     * can see (customer-scoped for customers, all for admins).
+     */
+    protected function recent_notifications()
+    {
+        if (!$this->user) return array();
+        try {
+            if (($this->user['role'] ?? '') === 'admin') {
+                return $this->Bank_model->all_transactions(NULL, 5);
+            }
+            return $this->Bank_model->transactions_for_user((int)$this->user['id'], 5);
+        } catch (Exception $e) {
+            return array();
+        }
     }
 
     protected function require_customer()

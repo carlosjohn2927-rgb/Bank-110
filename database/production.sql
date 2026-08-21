@@ -91,6 +91,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
  ip_address VARCHAR(45), user_agent VARCHAR(255), created_at DATETIME NOT NULL, INDEX idx_audit_user(user_id), INDEX idx_audit_date(created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS user_preferences (
+ user_id BIGINT UNSIGNED NOT NULL, pref_key VARCHAR(80) NOT NULL, pref_value VARCHAR(255) NULL, updated_at DATETIME NOT NULL,
+ PRIMARY KEY(user_id,pref_key), CONSTRAINT fk_pref_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS password_resets (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at DATETIME NOT NULL, used TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
  INDEX idx_reset_user(user_id), INDEX idx_reset_token(token), CONSTRAINT fk_reset_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE

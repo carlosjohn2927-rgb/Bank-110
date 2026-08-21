@@ -4,7 +4,7 @@ class Admin extends MY_Controller {
  public function __construct(){parent::__construct();$this->require_admin();}
  private function page($view,$data=array()){$this->render('admin/'.$view,$data,'layouts/admin');}
  public function dashboard(){$this->page('dashboard',array('title'=>'Operations overview','metrics'=>$this->Bank_model->admin_metrics(),'customers'=>$this->Bank_model->customers(5),'transactions'=>$this->Bank_model->all_transactions(NULL,6)));}
- public function customers(){$this->page('customers',array('title'=>'Customers','customers'=>$this->Bank_model->customers()));}
+ public function customers(){$q=$this->input->get('q',TRUE);$this->page('customers',array('title'=>'Customers','customers'=>$this->Bank_model->customers(100,$q),'q'=>$q));}
  public function customer($id){$customer=$this->Bank_model->customer_detail((int)$id);if(!$customer)show_404();$this->page('customer_detail',array('title'=>$customer['first_name'].' '.$customer['last_name'],'customer'=>$customer));}
  public function customer_create(){
   if($this->input->method()==='post'){
@@ -26,5 +26,14 @@ class Admin extends MY_Controller {
  public function ticket($id){$ticket=$this->Bank_model->ticket((int)$id);if(!$ticket)show_404();$this->page('ticket_detail',array('title'=>$ticket['subject'],'ticket'=>$ticket));}
  public function ticket_reply($id){if($this->input->method()!=='post')show_404();$this->form_validation->set_rules('message','Reply','required|trim|max_length[5000]');if($this->form_validation->run() && $this->Bank_model->reply_ticket((int)$id,$this->user['id'],$this->input->post('message',TRUE),$this->input->post('status',TRUE))){$this->Bank_model->audit('ticket_reply','Replied to ticket #'.$id,$this->user['id']);$this->session->set_flashdata('success','Reply added.');}else $this->session->set_flashdata('error',validation_errors('',' ') ?: 'Unable to add reply.');redirect('admin/tickets/'.$id);}
  public function tutorial(){$this->page('tutorial',array('title'=>'Platform tutorial'));}
+ public function admin_users(){
+  if($this->input->method()==='post'){
+   $this->form_validation->set_rules('first_name','First name','required|trim|max_length[80]');$this->form_validation->set_rules('last_name','Last name','required|trim|max_length[80]');
+   $this->form_validation->set_rules('username','Username','required|trim|is_unique[users.username]');$this->form_validation->set_rules('email','Email','required|valid_email|is_unique[users.email]');$this->form_validation->set_rules('password','Password','required|min_length[8]');
+   if($this->form_validation->run()){$this->Bank_model->create_admin(array('first_name'=>$this->input->post('first_name',TRUE),'last_name'=>$this->input->post('last_name',TRUE),'username'=>$this->input->post('username',TRUE),'email'=>$this->input->post('email',TRUE),'password'=>$this->input->post('password')));$this->Bank_model->audit('admin_created','Administrator '.$this->input->post('username',TRUE).' created',$this->user['id']);$this->session->set_flashdata('success','Administrator created.');}
+   else $this->session->set_flashdata('error',validation_errors('',' '));redirect('admin/admin_users');
+  }
+  $this->page('admin_users',array('title'=>'Admin users','admins'=>$this->Bank_model->admins()));
+ }
  public function settings(){if($this->input->method()==='post'){$keys=array('institution_name','support_email','default_currency','daily_transfer_limit','session_timeout','announcement_text','seo_site_name','seo_title','seo_description','seo_keywords');$values=array();foreach($keys as $k){$v=$this->input->post($k,TRUE);if($v!==NULL)$values[$k]=$v;}if($values){$this->Bank_model->save_settings($values);$this->Bank_model->audit('settings_updated','System settings updated',$this->user['id']);$this->session->set_flashdata('success','System settings saved.');}else $this->session->set_flashdata('error','No settings were submitted.');redirect('admin/settings');}$this->page('settings',array('title'=>'System settings','settings'=>$this->Bank_model->settings()));}
 }

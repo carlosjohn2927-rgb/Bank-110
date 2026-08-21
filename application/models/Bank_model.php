@@ -168,9 +168,11 @@ class Bank_model extends CI_Model
         return $metrics;
     }
 
-    public function customers($limit=100)
+    public function customers($limit=100,$search=NULL)
     {
-        return $this->db->select('u.*, COALESCE(SUM(a.available_balance),0) total_balance, COUNT(a.id) account_count')->from('users u')->join('accounts a','a.user_id=u.id','left')->where('u.role','customer')->group_by('u.id')->order_by('u.created_at','DESC')->limit($limit)->get()->result_array();
+        $this->db->select('u.*, COALESCE(SUM(a.available_balance),0) total_balance, COUNT(a.id) account_count')->from('users u')->join('accounts a','a.user_id=u.id','left')->where('u.role','customer');
+        if($search!==NULL && $search!=='')$this->db->group_start()->like('u.first_name',$search)->or_like('u.last_name',$search)->or_like('u.email',$search)->or_like('u.username',$search)->group_end();
+        return $this->db->group_by('u.id')->order_by('u.created_at','DESC')->limit($limit)->get()->result_array();
     }
 
     public function customer_detail($id)
@@ -276,6 +278,20 @@ class Bank_model extends CI_Model
         return $this->db->trans_status()?$account_id:FALSE;
     }
 
+    public function admins()
+    {
+        return $this->db->select('id,username,email,first_name,last_name,status,last_login_at,created_at')->where('role','admin')->order_by('created_at','DESC')->get('users')->result_array();
+    }
+
+    public function create_admin($data)
+    {
+        $now=date('Y-m-d H:i:s');
+        return $this->db->insert('users',array(
+            'username'=>$data['username'],'email'=>$data['email'],'password_hash'=>password_hash($data['password'],PASSWORD_DEFAULT),
+            'first_name'=>$data['first_name'],'last_name'=>$data['last_name'],'role'=>'admin','status'=>'active','created_at'=>$now,'updated_at'=>$now
+        ));
+    }
+
     public function create_customer($data)
     {
         $now=date('Y-m-d H:i:s'); $this->db->trans_start();
@@ -311,6 +327,25 @@ class Bank_model extends CI_Model
         $this->db->where('id',$row['id'])->update('password_resets',array('used'=>1));
         $this->db->trans_complete();
         return $this->db->trans_status();
+    }
+
+    public function preferences($user_id)
+    {
+        $rows=$this->db->select('pref_key,pref_value')->where('user_id',$user_id)->get('user_preferences')->result_array();
+        $out=array();foreach($rows as $r)$out[$r['pref_key']]=$r['pref_value'];return $out;
+    }
+
+    public function set_preference($user_id,$key,$value)
+    {
+        if($value===''||$value===NULL){return $this->db->where(array('user_id'=>$user_id,'pref_key'=>$key))->delete('user_preferences');}
+        return $this->db->replace('user_preferences',array('user_id'=>$user_id,'pref_key'=>$key,'pref_value'=>$value,'updated_at'=>date('Y-m-d H:i:s')));
+    }
+
+    public function change_password($user_id,$current,$new)
+    {
+        $user=$this->db->select('password_hash')->where('id',$user_id)->get('users')->row_array();
+        if(!$user || !password_verify($current,$user['password_hash']))return FALSE;
+        return $this->db->where('id',$user_id)->update('users',array('password_hash'=>password_hash($new,PASSWORD_DEFAULT),'updated_at'=>date('Y-m-d H:i:s')));
     }
 
     public function audit($action,$description,$user_id=NULL)
