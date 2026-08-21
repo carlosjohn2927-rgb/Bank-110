@@ -6,4 +6,14 @@ class Transactions extends MY_Controller {
   $filters=array('search'=>$this->input->get('q',TRUE),'type'=>$this->input->get('type',TRUE));
   $this->render('customer/transactions',array('title'=>'Transactions','transactions'=>$this->Bank_model->transactions_for_user($this->user['id'],100,$filters),'filters'=>$filters));
  }
+ public function statement(){
+  $filters=array('search'=>$this->input->get('q',TRUE),'type'=>$this->input->get('type',TRUE));
+  $rows=$this->Bank_model->transactions_for_user($this->user['id'],1000,$filters);
+  $name=preg_replace('/[^a-z0-9]+/i','-',strtolower($this->user['first_name'].'-'.$this->user['last_name'])).'-statement-'.date('Y-m-d').'.csv';
+  $this->output->set_content_type('text/csv')->set_header('Content-Disposition: attachment; filename="'.$name.'"');
+  $out=fopen('php://output','w');
+  fputcsv($out,array('Date','Reference','Description','Category','Type','Amount','Currency','Balance after','Status'));
+  foreach($rows as $t){fputcsv($out,array($t['transaction_date'],$t['reference'],$t['description'],$t['category'],$t['type'],$t['amount'],$t['currency'],$t['balance_after'],$t['status']));}
+  fclose($out);
+ }
 }

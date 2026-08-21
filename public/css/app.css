@@ -104,3 +104,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#1468e5;box-sh
 .insight{background:linear-gradient(100deg,#eef6ff,#fff)}
 .status{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:4px 9px;border-radius:999px}
 @media (prefers-reduced-motion:reduce){.page{animation:none}.btn,.quick a{transition:none}}
+
+/* Forgot password link */
+.forgot-link{display:block;margin-top:14px;text-align:center;font-size:12px;color:#1468e5;font-weight:700}
+.forgot-link:hover{text-decoration:underline}

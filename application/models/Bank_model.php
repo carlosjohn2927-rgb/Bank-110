@@ -92,6 +92,27 @@ class Bank_model extends CI_Model
         return $this->db->select('c.*, a.account_number, a.available_balance')->from('cards c')->join('accounts a','a.id=c.account_id')->where('c.user_id',$user_id)->get()->result_array();
     }
 
+    public function create_card($user_id, $data)
+    {
+        $account=$this->account((int)$data['account_id'],$user_id);
+        if(!$account || $account['status']!=='active')return array(FALSE,'The selected account is unavailable.');
+        $now=date('Y-m-d H:i:s');
+        $number=str_pad((string)random_int(0,9999999999999999),16,'0',STR_PAD_LEFT);
+        $last_four=substr($number,-4);
+        $expiry_month=random_int(1,12);$expiry_year=(int)date('Y')+random_int(3,5);
+        $cardholder=$data['cardholder_name'];
+        if(!trim((string)$cardholder)){ $u=$this->db->select('first_name,last_name')->where('id',$user_id)->get('users')->row_array(); $cardholder=($u['first_name']??'Card').' '.($u['last_name']??'Holder'); }
+        $this->db->trans_start();
+        $this->db->insert('cards',array(
+            'user_id'=>$user_id,'account_id'=>$account['id'],'cardholder_name'=>trim($cardholder),
+            'masked_number'=>'•••• •••• •••• '.$last_four,'last_four'=>$last_four,'expiry_month'=>$expiry_month,'expiry_year'=>$expiry_year,
+            'card_type'=>in_array($data['card_type'],array('virtual','physical'),TRUE)?$data['card_type']:'virtual','network'=>'Visa','status'=>'active',
+            'is_frozen'=>0,'online_enabled'=>1,'international_enabled'=>0,'daily_limit'=>round((float)($data['daily_limit']?:10000),2),'created_at'=>$now,'updated_at'=>$now
+        ));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,'Card ending in '.$last_four.' issued.'):array(FALSE,'Unable to issue the card.');
+    }
+
     public function toggle_card($id, $user_id, $field)
     {
         $allowed = array('is_frozen','online_enabled','international_enabled');
@@ -207,8 +228,53 @@ class Bank_model extends CI_Model
         $this->db->trans_complete(); return $this->db->trans_status();
     }
 
+    public function create_loan($user_id, $data)
+    {
+        $amount=round((float)$data['amount'],2);
+        $term=max(6,min(120,(int)$data['term_months']));
+        if($amount<100)return array(FALSE,'Minimum loan amount is 100.');
+        if($amount>250000)return array(FALSE,'Maximum loan amount is 250,000.');
+        $rate=round((float)($data['interest_rate'] ?: 6.25),3);
+        // Monthly payment via standard amortization
+        $r=$rate/100/12;
+        $payment=$r==0?$amount/$term:$amount*$r*pow(1+$r,$term)/(pow(1+$r,$term)-1);
+        $payment=round($payment,2);
+        $now=date('Y-m-d H:i:s');$reference='NW-LN-'.random_int(100000,999999);
+        $this->db->trans_start();
+        $this->db->insert('loans',array(
+            'user_id'=>$user_id,'reference'=>$reference,'type'=>trim($data['type'] ?: 'Personal loan'),'principal'=>$amount,'outstanding_balance'=>$amount,
+            'interest_rate'=>$rate,'monthly_payment'=>$payment,'next_payment_date'=>date('Y-m-d',strtotime('+1 month')),'term_months'=>$term,'payments_remaining'=>$term,
+            'status'=>'active','created_at'=>$now,'updated_at'=>$now
+        ));
+        $this->db->trans_complete();
+        return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'Unable to process the loan application.');
+    }
+
     public function all_cards() { return $this->db->select('c.*,u.first_name,u.last_name,a.account_number')->from('cards c')->join('users u','u.id=c.user_id')->join('accounts a','a.id=c.account_id')->order_by('c.created_at','DESC')->get()->result_array(); }
     public function all_loans() { return $this->db->select('l.*,u.first_name,u.last_name')->from('loans l')->join('users u','u.id=l.user_id')->order_by('l.created_at','DESC')->get()->result_array(); }
+
+    public function create_account($user_id, $data)
+    {
+        $now=date('Y-m-d H:i:s');
+        $type=in_array($data['type'],array('checking','savings','investment'),TRUE)?$data['type']:'checking';
+        $currency=strtoupper(trim($data['currency'] ?: 'USD')); if(!in_array($currency,array('USD','EUR','GBP'),TRUE))$currency='USD';
+        $account_number='NW'.date('ym').str_pad(random_int(0,9999999),7,'0',STR_PAD_LEFT);
+        $attempts=0;
+        while($this->db->where('account_number',$account_number)->count_all_results('accounts') && $attempts<5){$account_number='NW'.date('ym').str_pad(random_int(0,9999999),7,'0',STR_PAD_LEFT);$attempts++;}
+        $opening=round((float)($data['opening_balance'] ?? 0),2);
+        $this->db->trans_start();
+        $this->db->insert('accounts',array(
+            'user_id'=>$user_id,'account_number'=>$account_number,'name'=>$data['name'] ?: 'NorthWest '.ucfirst($type),'type'=>$type,'currency'=>$currency,
+            'balance'=>$opening,'available_balance'=>$opening,'status'=>'active','is_primary'=>0,'created_at'=>$now,'updated_at'=>$now
+        ));
+        $account_id=$this->db->insert_id();
+        if($opening>0){
+            $reference='DEP-'.date('ymd').'-'.random_int(10000,99999);
+            $this->db->insert('transactions',array('account_id'=>$account_id,'reference'=>$reference,'type'=>'credit','category'=>'Opening deposit','description'=>'Opening deposit for new account','amount'=>$opening,'currency'=>$currency,'balance_after'=>$opening,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
+        }
+        $this->db->trans_complete();
+        return $this->db->trans_status()?$account_id:FALSE;
+    }
 
     public function create_customer($data)
     {
@@ -218,6 +284,33 @@ class Bank_model extends CI_Model
         $this->db->insert('customer_profiles',array('user_id'=>$uid,'phone'=>$data['phone'],'country'=>$data['country'],'kyc_status'=>'pending','created_at'=>$now,'updated_at'=>$now));
         $this->db->insert('accounts',array('user_id'=>$uid,'account_number'=>'NW'.date('ym').str_pad($uid,7,'0',STR_PAD_LEFT),'name'=>'NorthWest Select','type'=>'checking','currency'=>'USD','balance'=>$data['opening_balance'],'available_balance'=>$data['opening_balance'],'status'=>'active','is_primary'=>1,'created_at'=>$now,'updated_at'=>$now));
         $this->db->trans_complete(); return $this->db->trans_status() ? $uid : FALSE;
+    }
+
+    public function create_password_reset($email)
+    {
+        $user=$this->db->select('id')->where('email',$email)->where('role','customer')->get('users')->row_array();
+        if(!$user)return FALSE;
+        $token=bin2hex(random_bytes(32));
+        $this->db->where('user_id',$user['id'])->delete('password_resets');
+        $this->db->insert('password_resets',array('user_id'=>$user['id'],'token'=>$token,'expires_at'=>date('Y-m-d H:i:s',strtotime('+30 minutes')),'used'=>0,'created_at'=>date('Y-m-d H:i:s')));
+        return $token;
+    }
+
+    public function get_password_reset($token)
+    {
+        $row=$this->db->where('token',$token)->where('used',0)->where('expires_at >',date('Y-m-d H:i:s'))->get('password_resets')->row_array();
+        return $row?:NULL;
+    }
+
+    public function complete_password_reset($token,$password)
+    {
+        $row=$this->get_password_reset($token);
+        if(!$row)return FALSE;
+        $this->db->trans_start();
+        $this->db->where('id',$row['user_id'])->update('users',array('password_hash'=>password_hash($password,PASSWORD_DEFAULT),'updated_at'=>date('Y-m-d H:i:s')));
+        $this->db->where('id',$row['id'])->update('password_resets',array('used'=>1));
+        $this->db->trans_complete();
+        return $this->db->trans_status();
     }
 
     public function audit($action,$description,$user_id=NULL)

@@ -51,6 +51,45 @@ class Auth extends MY_Controller
         $this->load->view('auth/admin');
     }
 
+    public function forgot()
+    {
+        if ($this->user) redirect($this->user['role'] === 'admin' ? 'admin/dashboard' : 'dashboard');
+        if ($this->input->method() === 'post') {
+            $this->form_validation->set_rules('email','Email','required|valid_email');
+            if ($this->form_validation->run()) {
+                $token = $this->Bank_model->create_password_reset($this->input->post('email', TRUE));
+                if ($token) {
+                    $this->Bank_model->audit('password_reset_requested','Password reset link generated');
+                    // In production the link is emailed; here we surface it once so the flow is usable.
+                    $this->session->set_flashdata('reset_link', site_url('reset/'.$token));
+                    redirect('forgot?sent=1');
+                }
+                $this->session->set_flashdata('error', 'No active account is associated with that email.');
+            } else $this->session->set_flashdata('error', validation_errors('',' '));
+            redirect('forgot');
+        }
+        $this->load->view('auth/forgot');
+    }
+
+    public function reset($token = NULL)
+    {
+        if ($this->user) redirect('dashboard');
+        if (!$token) redirect('forgot');
+        if ($this->input->method() === 'post') {
+            $this->form_validation->set_rules('password','New password','required|min_length[8]');
+            $this->form_validation->set_rules('confirm','Confirm password','required|matches[password]');
+            if ($this->form_validation->run() && $this->Bank_model->complete_password_reset($token, $this->input->post('password'))) {
+                $this->Bank_model->audit('password_reset_completed','Password reset completed');
+                $this->session->set_flashdata('success','Your password has been updated. Please sign in.');
+                redirect('login');
+            }
+            $this->session->set_flashdata('error', $this->Bank_model->get_password_reset($token) ? validation_errors('',' ') : 'This reset link is invalid or has expired.');
+            redirect('reset/'.$token);
+        }
+        if (!$this->Bank_model->get_password_reset($token)) { show_404(); }
+        $this->load->view('auth/reset', array('token' => $token));
+    }
+
     public function logout()
     {
         $role = $this->user['role'] ?? 'customer';
