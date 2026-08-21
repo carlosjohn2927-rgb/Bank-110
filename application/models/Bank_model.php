@@ -288,6 +288,25 @@ class Bank_model extends CI_Model
         return $ticket;
     }
 
+    public function ticket_for_user($id, $user_id)
+    {
+        $ticket=$this->db->select('st.*,u.first_name,u.last_name,u.email')->from('support_tickets st')->join('users u','u.id=st.user_id')->where(array('st.id'=>(int)$id,'st.user_id'=>(int)$user_id))->get()->row_array();
+        if($ticket)$ticket['messages']=$this->db->select('tm.*,u.first_name,u.last_name')->from('ticket_messages tm')->join('users u','u.id=tm.user_id')->where('tm.ticket_id',(int)$id)->order_by('tm.created_at')->get()->result_array();
+        return $ticket;
+    }
+
+    public function customer_reply_ticket($id, $user_id, $message)
+    {
+        $t=$this->ticket_for_user((int)$id,(int)$user_id);
+        if(!$t || in_array($t['status'],array('resolved','closed'),TRUE))return array(FALSE,'This ticket is closed.');
+        $now=date('Y-m-d H:i:s');
+        $this->db->trans_start();
+        $this->db->insert('ticket_messages',array('ticket_id'=>(int)$id,'user_id'=>$user_id,'message'=>$message,'is_staff'=>0,'created_at'=>$now));
+        $this->db->where('id',(int)$id)->update('support_tickets',array('status'=>'open','updated_at'=>$now));
+        $this->db->trans_complete();
+        return array($this->db->trans_status(),$t['reference']);
+    }
+
     public function reply_ticket($id,$admin_id,$message,$status)
     {
         if(!in_array($status,array('open','in_progress','resolved','closed'),TRUE))$status='in_progress'; $now=date('Y-m-d H:i:s');

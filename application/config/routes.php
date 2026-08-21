@@ -35,6 +35,7 @@ $route['loans/create'] = 'loans/create';
 $route['loans/(:num)/pay'] = 'loans/pay/$1';
 $route['support'] = 'support/index';
 $route['support/create'] = 'support/create';
+$route['support/(:num)'] = 'support/view/$1';
 $route['settings'] = 'profile/index';
 $route['settings/preferences'] = 'profile/preferences';
 $route['settings/password'] = 'profile/password';
