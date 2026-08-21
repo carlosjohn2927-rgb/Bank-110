@@ -17,6 +17,13 @@ class MY_Controller extends CI_Controller
                 $this->user = NULL;
             }
         }
+        // Load the UI language (from session preference or default).
+        $this->config->load('languages', TRUE);
+        $lang = $this->session->userdata('language') ?: ($this->config->item('default_language') ?: 'english');
+        if (!array_key_exists($lang, $this->config->item('available_languages') ?: array())) {
+            $lang = 'english';
+        }
+        $this->lang->load('northwest', $lang);
     }
 
     protected function render($view, $data = array(), $layout = 'layouts/customer')

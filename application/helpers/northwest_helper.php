@@ -121,3 +121,42 @@ function render_chat_widget()
     $CI =& get_instance();
     $CI->load->view('layouts/partials/chat_widget');
 }
+
+/* ---- Multi-language helpers ---- */
+
+function available_languages()
+{
+    $CI =& get_instance();
+    $CI->config->load('languages', TRUE);
+    return $CI->config->item('available_languages') ?: array('english' => 'English');
+}
+
+function current_language()
+{
+    $lang = get_instance()->session->userdata('language');
+    if (!$lang) $lang = get_instance()->config->item('default_language') ?: 'english';
+    if (!array_key_exists($lang, available_languages())) $lang = 'english';
+    return $lang;
+}
+
+/**
+ * A short language switcher (dropdown) usable in any layout or auth page.
+ */
+function render_language_switcher($form_class = 'lang-switch')
+{
+    $langs = available_languages();
+    $current = current_language();
+    $out = '<form method="post" action="'.site_url('language/set').'" class="'.html_escape($form_class).'">';
+    $out .= '<label class="lang-switch-label" for="nw-lang">'.$current.'</label>';
+    $out .= '<select id="nw-lang" name="language" onchange="this.form.submit()">';
+    foreach ($langs as $key => $label) {
+        $out .= '<option value="'.html_escape($key).'" '.($key === $current ? 'selected' : '').'>'.html_escape($label).'</option>';
+    }
+    $out .= '</select></form>';
+    return $out;
+}
+
+function tl($key)
+{
+    return get_instance()->lang->line($key) ?: $key;
+}

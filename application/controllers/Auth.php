@@ -166,6 +166,7 @@ class Auth extends MY_Controller
         $this->session->sess_regenerate(TRUE);
         unset($user['password_hash']);
         $this->session->set_userdata('user', $user);
+        try { $prefs=$this->Bank_model->preferences($user['id']); if(!empty($prefs['language'])) $this->session->set_userdata('language',$prefs['language']); } catch (Exception $e) {}
         $auth_secret = (string) $this->config->item('auth_secret');
         $this->session->set_userdata('auth_signature', hash_hmac('sha256', $user['id'].'|'.$user['role'].'|'.$user['created_at'], $auth_secret));
         $this->session->unset_userdata(array('captcha', 'captcha_verified'));

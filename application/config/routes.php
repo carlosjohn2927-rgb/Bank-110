@@ -42,6 +42,7 @@ $route['settings/preferences'] = 'profile/preferences';
 $route['settings/password'] = 'profile/password';
 $route['settings/twofa'] = 'profile/twofa';
 $route['chat'] = 'chat/index';
+$route['language/set'] = 'language/set';
 $route['scheduler/run'] = 'scheduler/run';
 
 $route['admin/dashboard'] = 'admin/dashboard';

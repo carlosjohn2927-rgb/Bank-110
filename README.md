@@ -32,10 +32,12 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 
 - Verification-code and password authentication with password recovery (forgot / reset)
 - Multi-account dashboard with real spending breakdown and insights
+- View full account numbers and bank routing numbers (with reveal-to-show)
 - Open new accounts (checking, savings, investment) with optional opening deposit
 - In-account deposits
 - Searchable transactions with CSV statement download
-- Database-transaction-backed transfers (internal / domestic / international tabs)
+- Database-transaction-backed transfers (internal / domestic / international tabs) with configurable international transfer fees
+- Multi-currency exchange between own accounts (rates managed by admins)
 - Bill payment to saved payees
 - Beneficiary management
 - Card issuance (virtual / physical) and security controls
@@ -47,6 +49,7 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Optional two-factor authentication (email OTP) at sign-in
 - KYC verification status visible to customers and managed by admins
 - Public self-service registration (toggle from Admin → System settings)
+- Multi-language UI (English, Deutsch, Français) with a language switcher in the header and on login pages
 - Transactional email notifications (welcome, transfer, ticket reply, password reset) via SMTP
 
 ### Administration
