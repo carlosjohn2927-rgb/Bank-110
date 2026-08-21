@@ -5,6 +5,7 @@ $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
 $route['login'] = 'auth/login';
+$route['register'] = 'register/index';
 $route['forgot'] = 'auth/forgot';
 $route['reset/(:any)'] = 'auth/reset/$1';
 $route['verify'] = 'auth/verify';

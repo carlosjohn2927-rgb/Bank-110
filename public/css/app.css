@@ -144,3 +144,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#1468e5;box-sh
 .kyc-status>div{display:flex;flex-direction:column}
 .kyc-status b{font-size:13px}
 .kyc-status small{font-size:11px;color:#8493a4;margin-top:3px}
+
+/* Registration link on login */
+.register-link{margin-top:14px;text-align:center;font-size:12px;color:#7e8c9c}
+.register-link a{color:#1468e5;font-weight:700}
+.register-link a:hover{text-decoration:underline}

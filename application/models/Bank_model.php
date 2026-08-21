@@ -402,6 +402,19 @@ class Bank_model extends CI_Model
         ));
     }
 
+    public function register_customer($data)
+    {
+        $now=date('Y-m-d H:i:s');
+        $this->db->trans_start();
+        $this->db->insert('users',array('username'=>$data['username'],'email'=>$data['email'],'password_hash'=>password_hash($data['password'],PASSWORD_DEFAULT),'first_name'=>$data['first_name'],'last_name'=>$data['last_name'],'role'=>'customer','status'=>'pending','created_at'=>$now,'updated_at'=>$now));
+        $uid=$this->db->insert_id();
+        $this->db->insert('customer_profiles',array('user_id'=>$uid,'phone'=>$data['phone'],'country'=>$data['country'],'kyc_status'=>'pending','created_at'=>$now,'updated_at'=>$now));
+        $account_number='NW'.date('ym').str_pad($uid,7,'0',STR_PAD_LEFT);
+        $this->db->insert('accounts',array('user_id'=>$uid,'account_number'=>$account_number,'name'=>'NorthWest Select','type'=>'checking','currency'=>'USD','balance'=>0,'available_balance'=>0,'status'=>'active','is_primary'=>1,'created_at'=>$now,'updated_at'=>$now));
+        $this->db->trans_complete();
+        return $this->db->trans_status() ? $uid : FALSE;
+    }
+
     public function create_customer($data)
     {
         $now=date('Y-m-d H:i:s'); $this->db->trans_start();
