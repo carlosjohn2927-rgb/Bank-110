@@ -74,7 +74,7 @@ class MY_Controller extends CI_Controller
     {
         if (!$this->user || ($this->user['role'] ?? '') !== 'customer') {
             $this->session->set_flashdata('error', 'Please sign in to continue.');
-            redirect('login');
+            redirect('user/login');
         }
     }
 
@@ -82,7 +82,7 @@ class MY_Controller extends CI_Controller
     {
         if (!$this->user || ($this->user['role'] ?? '') !== 'admin') {
             $this->session->set_flashdata('error', 'Administrator authentication required.');
-            redirect('admin');
+            redirect('login');
         }
     }
 

@@ -1,21 +1,29 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
-$route['default_controller'] = 'auth/login';
+$route['default_controller'] = 'home/index';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
+// Public marketing homepage.
+$route['home'] = 'home/index';
+
+// Administrator sign-in (formerly the customer login at /login).
 $route['login'] = 'auth/login';
-$route['register'] = 'register/index';
-$route['forgot'] = 'auth/forgot';
-$route['reset/(:any)'] = 'auth/reset/$1';
+$route['admin'] = 'auth/login';
+$route['admin/login'] = 'auth/login';
+$route['admin/logout'] = 'auth/logout';
+
+// Customer sign-in.
+$route['user/login'] = 'auth/user_login';
+$route['signin'] = 'auth/user_login';
 $route['verify'] = 'auth/verify';
-$route['twofa'] = 'auth/twofa';
-$route['twofa/resend'] = 'auth/resend_twofa';
 $route['auth/customer_login'] = 'auth/customer_login';
 $route['logout'] = 'auth/logout';
-$route['admin'] = 'auth/admin';
-$route['admin/login'] = 'auth/admin';
-$route['admin/logout'] = 'auth/logout';
+$route['twofa'] = 'auth/twofa';
+$route['twofa/resend'] = 'auth/resend_twofa';
+$route['forgot'] = 'auth/forgot';
+$route['reset/(:any)'] = 'auth/reset/$1';
+$route['register'] = 'register/index';
 $route['dashboard'] = 'dashboard/index';
 $route['accounts'] = 'accounts/index';
 $route['accounts/create'] = 'accounts/create';

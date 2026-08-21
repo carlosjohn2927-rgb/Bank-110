@@ -21,5 +21,8 @@ node_modules/
 dist/
 .DS_Store
 
+# Scratch directory used when sourcing stock images for the homepage
+image-search/
+
 # Local environment (contains secrets — use .env.example as the template)
 .env

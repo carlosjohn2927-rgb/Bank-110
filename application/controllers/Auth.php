@@ -3,37 +3,71 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Auth extends MY_Controller
 {
+    /**
+     * /login — Administrator sign-in (captcha-free, rate-limited).
+     */
     public function login()
     {
         if ($this->user) redirect($this->user['role'] === 'admin' ? 'admin/dashboard' : 'dashboard');
+        if ($this->input->method() === 'post') {
+            $this->form_validation->set_rules('identity', 'Email or username', 'required|trim');
+            $this->form_validation->set_rules('password', 'Password', 'required');
+            if ($this->form_validation->run()) {
+                $key = 'admin:'.($this->input->post('identity', TRUE));
+                if ($this->Bank_model->login_attempts($key) >= 5) {
+                    $this->session->set_flashdata('error', 'Too many failed attempts. Please try again in 15 minutes.');
+                    redirect('login');
+                }
+                $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'admin');
+                if ($user) {
+                    $this->Bank_model->clear_login_attempts($key);
+                    $this->establish_session($user);
+                    redirect('admin/dashboard');
+                }
+                $this->Bank_model->record_login_attempt($key, FALSE);
+                $this->session->set_flashdata('error', 'Invalid administrator credentials.');
+            } else {
+                $this->session->set_flashdata('error', validation_errors(' ', ' '));
+            }
+            redirect('login');
+        }
+        $this->load->view('auth/login');
+    }
+
+    /**
+     * /user/login — Customer sign-in with bot-check captcha.
+     */
+    public function user_login()
+    {
+        if ($this->user) redirect($this->user['role'] === 'admin' ? 'admin/dashboard' : 'dashboard');
         if (!$this->session->userdata('captcha')) $this->refresh_captcha();
-        $this->load->view('auth/login', array('captcha' => $this->session->userdata('captcha')));
+        $this->load->view('auth/user_login', array('captcha' => $this->session->userdata('captcha')));
     }
 
     public function verify()
     {
-        if (!$this->input->post()) redirect('login');
+        if (!$this->input->post()) redirect('user/login');
         $code = trim((string) $this->input->post('code', TRUE));
         if (!hash_equals((string) $this->session->userdata('captcha'), $code)) {
             $this->session->set_flashdata('error', 'The verification code does not match.');
             $this->refresh_captcha();
-            redirect('login');
+            redirect('user/login');
         }
         $this->session->set_userdata('captcha_verified', TRUE);
-        redirect('login?credentials=1');
+        redirect('user/login?credentials=1');
     }
 
     public function customer_login()
     {
-        if (!$this->session->userdata('captcha_verified')) redirect('login');
+        if (!$this->session->userdata('captcha_verified')) redirect('user/login');
         $this->form_validation->set_rules('identity', 'Account number or email', 'required|trim');
         $this->form_validation->set_rules('password', 'Password', 'required');
-        if (!$this->form_validation->run()) { $this->session->set_flashdata('error', validation_errors('',' ')); redirect('login?credentials=1'); }
+        if (!$this->form_validation->run()) { $this->session->set_flashdata('error', validation_errors('',' ')); redirect('user/login?credentials=1'); }
         // Brute-force protection: lock out after repeated failures.
         $key='customer:'.($this->input->post('identity',TRUE));
-        if($this->Bank_model->login_attempts($key)>=5){$this->session->set_flashdata('error','Too many failed attempts. Please try again in 15 minutes.');redirect('login?credentials=1');}
+        if($this->Bank_model->login_attempts($key)>=5){$this->session->set_flashdata('error','Too many failed attempts. Please try again in 15 minutes.');redirect('user/login?credentials=1');}
         $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'customer');
-        if (!$user) { $this->Bank_model->record_login_attempt($key,FALSE); $this->session->set_flashdata('error', 'Invalid login details or inactive account.'); redirect('login?credentials=1'); }
+        if (!$user) { $this->Bank_model->record_login_attempt($key,FALSE); $this->session->set_flashdata('error', 'Invalid login details or inactive account.'); redirect('user/login?credentials=1'); }
         $this->Bank_model->clear_login_attempts($key);
         // Two-factor authentication: if enabled, send an OTP and pause sign-in.
         if (!empty($user['twofa_enabled'])) {
@@ -47,7 +81,7 @@ class Auth extends MY_Controller
     public function twofa()
     {
         $pending = $this->session->userdata('twofa_pending');
-        if (!$pending || empty($pending['user'])) redirect('login');
+        if (!$pending || empty($pending['user'])) redirect('user/login');
         if ($this->input->method() === 'post') {
             $code = trim((string) $this->input->post('code', TRUE));
             if (!empty($pending['code']) && hash_equals((string)$pending['code'], $code) && strtotime($pending['expires']) > time()) {
@@ -64,7 +98,7 @@ class Auth extends MY_Controller
     public function resend_twofa()
     {
         $pending = $this->session->userdata('twofa_pending');
-        if (!$pending || empty($pending['user'])) redirect('login');
+        if (!$pending || empty($pending['user'])) redirect('user/login');
         $this->dispatch_otp($pending['user']);
         $this->session->set_flashdata('success', 'A new code has been sent.');
         redirect('twofa');
@@ -102,21 +136,8 @@ class Auth extends MY_Controller
 
     public function admin()
     {
-        if ($this->user && $this->user['role'] === 'admin') redirect('admin/dashboard');
-        if ($this->input->method() === 'post') {
-            $this->form_validation->set_rules('identity', 'Email or username', 'required|trim');
-            $this->form_validation->set_rules('password', 'Password', 'required');
-            if ($this->form_validation->run()) {
-                $key='admin:'.($this->input->post('identity',TRUE));
-                if($this->Bank_model->login_attempts($key)>=5){$this->session->set_flashdata('error','Too many failed attempts. Please try again in 15 minutes.');redirect('admin');}
-                $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'admin');
-                if ($user) { $this->Bank_model->clear_login_attempts($key); $this->establish_session($user); redirect('admin/dashboard'); }
-                $this->Bank_model->record_login_attempt($key,FALSE);
-                $this->session->set_flashdata('error', 'Invalid administrator credentials.');
-            } else $this->session->set_flashdata('error', validation_errors('',' '));
-            redirect('admin');
-        }
-        $this->load->view('auth/admin');
+        // /admin kept as an alias for the administrator sign-in.
+        redirect('login');
     }
 
     public function forgot()
@@ -151,7 +172,7 @@ class Auth extends MY_Controller
             if ($this->form_validation->run() && $this->Bank_model->complete_password_reset($token, $this->input->post('password'))) {
                 $this->Bank_model->audit('password_reset_completed','Password reset completed');
                 $this->session->set_flashdata('success','Your password has been updated. Please sign in.');
-                redirect('login');
+                redirect('user/login');
             }
             $this->session->set_flashdata('error', $this->Bank_model->get_password_reset($token) ? validation_errors('',' ') : 'This reset link is invalid or has expired.');
             redirect('reset/'.$token);
@@ -165,7 +186,7 @@ class Auth extends MY_Controller
         $role = $this->user['role'] ?? 'customer';
         $this->Bank_model->audit('logout', 'User signed out', $this->user['id'] ?? NULL);
         $this->session->sess_destroy();
-        redirect($role === 'admin' ? 'admin' : 'login');
+        redirect($role === 'admin' ? 'login' : 'user/login');
     }
 
     private function establish_session($user)
