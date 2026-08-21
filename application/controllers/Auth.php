@@ -29,8 +29,12 @@ class Auth extends MY_Controller
         $this->form_validation->set_rules('identity', 'Account number or email', 'required|trim');
         $this->form_validation->set_rules('password', 'Password', 'required');
         if (!$this->form_validation->run()) { $this->session->set_flashdata('error', validation_errors('',' ')); redirect('login?credentials=1'); }
+        // Brute-force protection: lock out after repeated failures.
+        $key='customer:'.($this->input->post('identity',TRUE));
+        if($this->Bank_model->login_attempts($key)>=5){$this->session->set_flashdata('error','Too many failed attempts. Please try again in 15 minutes.');redirect('login?credentials=1');}
         $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'customer');
-        if (!$user) { $this->session->set_flashdata('error', 'Invalid login details or inactive account.'); redirect('login?credentials=1'); }
+        if (!$user) { $this->Bank_model->record_login_attempt($key,FALSE); $this->session->set_flashdata('error', 'Invalid login details or inactive account.'); redirect('login?credentials=1'); }
+        $this->Bank_model->clear_login_attempts($key);
         // Two-factor authentication: if enabled, send an OTP and pause sign-in.
         if (!empty($user['twofa_enabled'])) {
             $this->begin_twofa($user);
@@ -103,8 +107,11 @@ class Auth extends MY_Controller
             $this->form_validation->set_rules('identity', 'Email or username', 'required|trim');
             $this->form_validation->set_rules('password', 'Password', 'required');
             if ($this->form_validation->run()) {
+                $key='admin:'.($this->input->post('identity',TRUE));
+                if($this->Bank_model->login_attempts($key)>=5){$this->session->set_flashdata('error','Too many failed attempts. Please try again in 15 minutes.');redirect('admin');}
                 $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'admin');
-                if ($user) { $this->establish_session($user); redirect('admin/dashboard'); }
+                if ($user) { $this->Bank_model->clear_login_attempts($key); $this->establish_session($user); redirect('admin/dashboard'); }
+                $this->Bank_model->record_login_attempt($key,FALSE);
                 $this->session->set_flashdata('error', 'Invalid administrator credentials.');
             } else $this->session->set_flashdata('error', validation_errors('',' '));
             redirect('admin');

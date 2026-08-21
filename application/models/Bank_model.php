@@ -756,6 +756,24 @@ class Bank_model extends CI_Model
         return $this->db->where('user_id',(int)$user_id)->where('is_read',0)->update('user_notifications', array('is_read'=>1));
     }
 
+    public function login_attempts($key, $window_seconds=900, $max=5)
+    {
+        $cutoff=time()-$window_seconds;
+        // trim old rows
+        $this->db->where('created_at <',date('Y-m-d H:i:s',$cutoff))->delete('login_attempts');
+        return $this->db->where('attempt_key',$key)->where('created_at >=',date('Y-m-d H:i:s',$cutoff))->count_all_results('login_attempts');
+    }
+
+    public function record_login_attempt($key,$success=FALSE)
+    {
+        return $this->db->insert('login_attempts',array('attempt_key'=>$key,'success'=>$success?'1':'0','ip_address'=>$this->input->ip_address(),'created_at'=>date('Y-m-d H:i:s')));
+    }
+
+    public function clear_login_attempts($key)
+    {
+        return $this->db->where('attempt_key',$key)->delete('login_attempts');
+    }
+
     public function audit($action,$description,$user_id=NULL)
     {
         return $this->db->insert('audit_logs',array('user_id'=>$user_id,'action'=>$action,'description'=>$description,'ip_address'=>$this->input->ip_address(),'user_agent'=>substr($this->input->user_agent(),0,255),'created_at'=>date('Y-m-d H:i:s')));
