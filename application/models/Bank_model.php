@@ -180,6 +180,7 @@ class Bank_model extends CI_Model
         $this->db->trans_complete();
         if ($this->db->trans_status() && function_exists('notify_user')) {
             try { notify_user($user_id, 'Transfer '.$reference.' submitted', '<p>Your transfer of '.$this->money_local($amount, $account['currency']).' to '.htmlspecialchars($data['recipient_name']).' has been submitted and is being processed.</p><p>Reference: <b>'.$reference.'</b></p>','','notify_transfers'); } catch (Exception $e) {}
+            try { $this->add_notification($user_id,'transfer','Transfer '.$reference.' submitted','To '.$data['recipient_name'].' · '.$this->money_local($amount, $account['currency']),'transactions'); } catch (Exception $e) {}
         }
         return $this->db->trans_status() ? array(TRUE, $reference) : array(FALSE, 'The transfer could not be submitted.');
     }
@@ -405,6 +406,7 @@ class Bank_model extends CI_Model
         $this->db->trans_complete();
         if($this->db->trans_status() && function_exists('notify_user')){
             try{notify_user((int)$transfer['user_id'],'Transfer '.$transfer['reference'].' completed','<p>Your transfer of '.$this->money_local($transfer['amount'],$transfer['currency']).' to '.htmlspecialchars($transfer['recipient_name']).' has been completed.</p>','','notify_transfers');}catch(Exception $e){}
+            try { $this->add_notification((int)$transfer['user_id'],'transfer','Transfer '.$transfer['reference'].' completed','To '.$transfer['recipient_name'].' · '.$this->money_local($transfer['amount'],$transfer['currency']),'transactions'); } catch (Exception $e) {}
         }
         return $this->db->trans_status()?array(TRUE,$transfer['reference']):array(FALSE,'The transfer could not be completed.');
     }
@@ -490,6 +492,7 @@ class Bank_model extends CI_Model
             try {
                 $t=$this->ticket($id);
                 if(!empty($t['email'])) notify_user((int)$t['user_id'], 'Update on support request '.$t['reference'], '<p>NorthWest support has replied to your request <b>'.$t['reference'].'</b>.</p><p><i>'.htmlspecialchars(substr($message,0,200)).'</i></p>','','notify_tickets');
+                try { $this->add_notification((int)$t['user_id'],'ticket','Support reply on '.$t['reference'],'NorthWest support replied to your request','support/'.$id); } catch (Exception $e) {}
             } catch (Exception $e) {}
         }
         return $this->db->trans_status();
@@ -685,6 +688,30 @@ class Bank_model extends CI_Model
         $this->db->select('l.*, u.first_name, u.last_name, u.email')->from('audit_logs l')->join('users u','u.id=l.user_id','left');
         if($search!==NULL && $search!=='')$this->db->group_start()->like('l.action',$search)->or_like('l.description',$search)->or_like('u.email',$search)->group_end();
         return $this->db->order_by('l.id','DESC')->limit($limit)->get()->result_array();
+    }
+
+    public function add_notification($user_id, $type, $title, $body=NULL, $link=NULL)
+    {
+        return $this->db->insert('user_notifications', array(
+            'user_id'=>(int)$user_id,'type'=>$type,'title'=>$title,'body'=>$body,'link'=>$link,'is_read'=>0,'created_at'=>date('Y-m-d H:i:s')
+        ));
+    }
+
+    public function notifications($user_id, $limit=20, $unread_only=FALSE)
+    {
+        $this->db->where('user_id',(int)$user_id);
+        if($unread_only)$this->db->where('is_read',0);
+        return $this->db->order_by('id','DESC')->limit($limit)->get('user_notifications')->result_array();
+    }
+
+    public function unread_notification_count($user_id)
+    {
+        return $this->db->where('user_id',(int)$user_id)->where('is_read',0)->count_all_results('user_notifications');
+    }
+
+    public function mark_notifications_read($user_id)
+    {
+        return $this->db->where('user_id',(int)$user_id)->where('is_read',0)->update('user_notifications', array('is_read'=>1));
     }
 
     public function audit($action,$description,$user_id=NULL)

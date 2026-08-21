@@ -31,7 +31,7 @@ class Accounts extends MY_Controller {
    $this->db->where('id',$account['id'])->set('balance','balance+'.$amount,FALSE)->set('available_balance','available_balance+'.$amount,FALSE)->update('accounts');
    $this->db->insert('transactions',array('account_id'=>$account['id'],'reference'=>$reference,'type'=>'credit','category'=>'Deposit','description'=>'Cash or transfer deposit','amount'=>$amount,'currency'=>$account['currency'],'balance_after'=>(float)$account['available_balance']+$amount,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
    $this->db->trans_complete();
-   if($this->db->trans_status()){$this->Bank_model->audit('deposit','Deposit of '.$amount.' '.$account['currency'].' to account #'.$account['id'],$this->user['id']);$this->session->set_flashdata('success','Deposit completed. Reference: '.$reference);}
+   if($this->db->trans_status()){$this->Bank_model->audit('deposit','Deposit of '.$amount.' '.$account['currency'].' to account #'.$account['id'],$this->user['id']);$this->Bank_model->add_notification($this->user['id'],'deposit','Deposit of '.money($amount,$account['currency']).' completed','Reference: '.$reference,'accounts');$this->session->set_flashdata('success','Deposit completed. Reference: '.$reference);}
    else $this->session->set_flashdata('error','The deposit could not be completed.');
   } else $this->session->set_flashdata('error',validation_errors('',' '));
   redirect('accounts');

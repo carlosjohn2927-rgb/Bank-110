@@ -97,6 +97,12 @@ CREATE TABLE IF NOT EXISTS user_preferences (
  PRIMARY KEY(user_id,pref_key), CONSTRAINT fk_pref_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS user_notifications (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, type VARCHAR(40) NOT NULL DEFAULT 'general', title VARCHAR(190) NOT NULL,
+ body VARCHAR(500) NULL, link VARCHAR(190) NULL, is_read TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+ INDEX idx_notif_user(user_id), INDEX idx_notif_unread(user_id,is_read), CONSTRAINT fk_notif_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS exchange_rates (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, from_currency CHAR(3) NOT NULL, to_currency CHAR(3) NOT NULL, rate DECIMAL(20,10) NOT NULL,
  updated_at DATETIME NOT NULL, UNIQUE KEY uq_pair(from_currency,to_currency)

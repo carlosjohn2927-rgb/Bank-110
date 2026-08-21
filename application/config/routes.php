@@ -44,6 +44,7 @@ $route['support'] = 'support/index';
 $route['support/create'] = 'support/create';
 $route['support/(:num)'] = 'support/view/$1';
 $route['settings'] = 'profile/index';
+$route['notifications'] = 'notifications/index';
 $route['settings/preferences'] = 'profile/preferences';
 $route['settings/password'] = 'profile/password';
 $route['settings/twofa'] = 'profile/twofa';

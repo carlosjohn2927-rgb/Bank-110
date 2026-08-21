@@ -34,6 +34,8 @@ class MY_Controller extends CI_Controller
         $data['flash_success'] = $this->session->flashdata('success');
         $data['flash_error'] = $this->session->flashdata('error');
         $data['notifications'] = $this->recent_notifications();
+        $data['app_notifications'] = $this->app_notifications();
+        $data['unread_count'] = $this->unread_count();
         $this->load->view($layout, $data);
     }
 
@@ -41,6 +43,20 @@ class MY_Controller extends CI_Controller
      * Recent activity for the header bell — the last few transactions the user
      * can see (customer-scoped for customers, all for admins).
      */
+    protected function app_notifications()
+    {
+        if (!$this->user) return array();
+        try { return $this->Bank_model->notifications((int)$this->user['id'], 8); }
+        catch (Exception $e) { return array(); }
+    }
+
+    protected function unread_count()
+    {
+        if (!$this->user) return 0;
+        try { return (int)$this->Bank_model->unread_notification_count((int)$this->user['id']); }
+        catch (Exception $e) { return 0; }
+    }
+
     protected function recent_notifications()
     {
         if (!$this->user) return array();
