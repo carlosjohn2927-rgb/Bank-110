@@ -451,6 +451,11 @@ class Bank_model extends CI_Model
         return $this->db->replace('user_preferences',array('user_id'=>$user_id,'pref_key'=>$key,'pref_value'=>$value,'updated_at'=>date('Y-m-d H:i:s')));
     }
 
+    public function set_twofa($user_id,$enabled)
+    {
+        return $this->db->where('id',$user_id)->update('users',array('twofa_enabled'=>$enabled?'1':'0','updated_at'=>date('Y-m-d H:i:s')));
+    }
+
     public function change_password($user_id,$current,$new)
     {
         $user=$this->db->select('password_hash')->where('id',$user_id)->get('users')->row_array();

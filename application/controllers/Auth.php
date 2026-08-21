@@ -31,8 +31,69 @@ class Auth extends MY_Controller
         if (!$this->form_validation->run()) { $this->session->set_flashdata('error', validation_errors('',' ')); redirect('login?credentials=1'); }
         $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'customer');
         if (!$user) { $this->session->set_flashdata('error', 'Invalid login details or inactive account.'); redirect('login?credentials=1'); }
+        // Two-factor authentication: if enabled, send an OTP and pause sign-in.
+        if (!empty($user['twofa_enabled'])) {
+            $this->begin_twofa($user);
+            return;
+        }
         $this->establish_session($user);
         redirect('dashboard');
+    }
+
+    public function twofa()
+    {
+        $pending = $this->session->userdata('twofa_pending');
+        if (!$pending || empty($pending['user'])) redirect('login');
+        if ($this->input->method() === 'post') {
+            $code = trim((string) $this->input->post('code', TRUE));
+            if (!empty($pending['code']) && hash_equals((string)$pending['code'], $code) && strtotime($pending['expires']) > time()) {
+                $this->session->unset_userdata('twofa_pending');
+                $this->establish_session($pending['user']);
+                redirect('dashboard');
+            }
+            $this->session->set_flashdata('error', 'That code is incorrect or has expired.');
+            redirect('twofa');
+        }
+        $this->load->view('auth/twofa', array('masked_email' => $this->mask_email($pending['user']['email'])));
+    }
+
+    public function resend_twofa()
+    {
+        $pending = $this->session->userdata('twofa_pending');
+        if (!$pending || empty($pending['user'])) redirect('login');
+        $this->dispatch_otp($pending['user']);
+        $this->session->set_flashdata('success', 'A new code has been sent.');
+        redirect('twofa');
+    }
+
+    private function begin_twofa($user)
+    {
+        $this->session->set_userdata('twofa_pending', array('user'=>$user));
+        $this->dispatch_otp($user);
+        redirect('twofa');
+    }
+
+    private function dispatch_otp($user)
+    {
+        $code = (string) random_int(100000, 999999);
+        $pending = $this->session->userdata('twofa_pending') ?: array();
+        $pending['code'] = $code;
+        $pending['expires'] = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+        $pending['user'] = $user;
+        $this->session->set_userdata('twofa_pending', $pending);
+        if (function_exists('send_notification_email')) {
+            send_notification_email($user['email'], 'Your NorthWest sign-in code', '<p>Your verification code is:</p><p style="font-size:26px;font-weight:800;letter-spacing:3px;color:#1468e5">'.$code.'</p><p>It expires in 5 minutes. If you didn\'t attempt to sign in, please contact support immediately.</p>');
+        }
+        return $code;
+    }
+
+    private function mask_email($email)
+    {
+        $parts = explode('@', (string)$email);
+        if (count($parts) !== 2) return 'your email';
+        $name = $parts[0];
+        $masked = substr($name,0,2).str_repeat('•',max(2,strlen($name)-4)).substr($name,-1);
+        return $masked.'@'.$parts[1];
     }
 
     public function admin()

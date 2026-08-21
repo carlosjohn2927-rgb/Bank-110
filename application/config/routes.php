@@ -8,6 +8,8 @@ $route['login'] = 'auth/login';
 $route['forgot'] = 'auth/forgot';
 $route['reset/(:any)'] = 'auth/reset/$1';
 $route['verify'] = 'auth/verify';
+$route['twofa'] = 'auth/twofa';
+$route['twofa/resend'] = 'auth/resend_twofa';
 $route['auth/customer_login'] = 'auth/customer_login';
 $route['logout'] = 'auth/logout';
 $route['admin'] = 'auth/admin';
@@ -35,6 +37,7 @@ $route['support/create'] = 'support/create';
 $route['settings'] = 'profile/index';
 $route['settings/preferences'] = 'profile/preferences';
 $route['settings/password'] = 'profile/password';
+$route['settings/twofa'] = 'profile/twofa';
 $route['chat'] = 'chat/index';
 $route['scheduler/run'] = 'scheduler/run';
 

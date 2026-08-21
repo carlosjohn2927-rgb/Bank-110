@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, username VARCHAR(80) NOT NULL UNIQUE, email VARCHAR(190) NOT NULL UNIQUE,
  password_hash VARCHAR(255) NOT NULL, first_name VARCHAR(80) NOT NULL, last_name VARCHAR(80) NOT NULL,
  role ENUM('customer','admin') NOT NULL DEFAULT 'customer', status ENUM('active','pending','suspended','closed') NOT NULL DEFAULT 'active',
+ twofa_enabled TINYINT(1) NOT NULL DEFAULT 0,
  last_login_at DATETIME NULL, last_login_ip VARCHAR(45) NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
  INDEX idx_users_role_status(role,status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -122,6 +123,11 @@ CREATE TABLE IF NOT EXISTS notification_templates (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, template_key VARCHAR(100) NOT NULL UNIQUE, channel ENUM('email','sms','system') NOT NULL, subject VARCHAR(190), body TEXT NOT NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 SET NAMES utf8mb4;
+
+-- Add twofa_enabled column to users if missing (safe for existing installs).
+SET @has_twofa := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='users' AND column_name='twofa_enabled');
+SET @ddl := IF(@has_twofa = 0, 'ALTER TABLE users ADD COLUMN twofa_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER status', 'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 INSERT INTO users (id,username,email,password_hash,first_name,last_name,role,status,created_at,updated_at) VALUES
 (1,'northadmin','admin@northwest.financeltd.org','$2y$12$EltRBU5UuWsjluAHadTdPuyrSTUJLMKLUGH2X8HugEknRLIlhZGYe','North','Admin','admin','active',NOW(),NOW()),
