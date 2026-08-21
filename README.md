@@ -41,8 +41,9 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Card issuance (virtual / physical) and security controls
 - Loan applications (amortized) and loan payments
 - Scheduled transfers (processed by a cron endpoint)
-- Support tickets with live help search
+- Support tickets with live help search and per-ticket conversations
 - Customer profile, avatar uploads, notification/region preferences, and password change
+- Configurable daily transfer limit with real-time usage tracking and enforcement
 - Optional two-factor authentication (email OTP) at sign-in
 - KYC verification status visible to customers and managed by admins
 - Public self-service registration (toggle from Admin → System settings)
@@ -61,9 +62,11 @@ See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-c
 - Platform settings, SEO, and announcement text
 - Admin user management
 - KYC verification
-- Loan issuance
+- Loan and card issuance
 - Guided tutorial content
-- Audit logging
+- Audit log viewer
+- CSV exports (transactions, customers)
+- Searchable transaction/customer lists
 
 ### Site-wide UX & engagement
 
