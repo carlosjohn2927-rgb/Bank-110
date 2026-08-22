@@ -52,6 +52,7 @@ class Setup extends CI_Controller
 
         // 4) Config sanity
         $checks[] = $this->row('CI_ENV set', (string)getenv('CI_ENV') !== '', 'Set CI_ENV in .env');
+        $checks[] = $this->row('PHP Version is 8.2 or newer (Current: '.PHP_VERSION.')', version_compare(PHP_VERSION, '8.2.0', '>='), 'Switch to PHP 8.2+ in cPanel MultiPHP Manager');
 
         foreach ($checks as $c) { if (!$c['ok']) $all_ok = FALSE; }
 

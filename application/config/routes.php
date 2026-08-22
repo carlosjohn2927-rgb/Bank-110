@@ -130,8 +130,6 @@ $route['admin/deposits'] = 'admin/deposits';
 $route['admin/check-deposits'] = 'admin/check_deposits';
 $route['admin/check-deposits/(:num)/review'] = 'admin/check_deposit_review/$1';
 $route['admin/check-deposits/(:num)'] = 'admin/check_deposit/$1';
-<<<<<<< HEAD
-=======
 $route['kyc'] = 'kyc/index';
 $route['kyc/upload'] = 'kyc/upload';
 $route['kyc/delete/(:num)'] = 'kyc/delete/$1';
@@ -139,7 +137,6 @@ $route['kyc/download/(:num)'] = 'kyc/download/$1';
 $route['admin/kyc-documents'] = 'admin/kyc_documents';
 $route['admin/kyc-documents/(:num)/review'] = 'admin/kyc_review/$1';
 $route['admin/kyc-documents/(:num)'] = 'admin/kyc_document/$1';
->>>>>>> 8cd6fd1 (Complete KYC document upload with admin review)
 $route['admin/loans'] = 'admin/loans';
 $route['admin/cards'] = 'admin/cards';
 $route['admin/tickets'] = 'admin/tickets';

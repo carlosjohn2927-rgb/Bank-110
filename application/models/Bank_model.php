@@ -1294,8 +1294,7 @@ class Bank_model extends CI_Model
         return array(TRUE, $status);
     }
 
-<<<<<<< HEAD
-=======
+
     /* -------------------- KYC documents -------------------- */
 
     public function kyc_documents($user_id)
@@ -1392,7 +1391,6 @@ class Bank_model extends CI_Model
         return $out;
     }
 
->>>>>>> 8cd6fd1 (Complete KYC document upload with admin review)
     /* -------------------- Savings Goals -------------------- */
 
     public function goals($user_id)
