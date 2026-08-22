@@ -16,7 +16,6 @@ class Pages extends MY_Controller
         'security'  => array('security',  'How we keep your money safe','Read how NorthWest protects your accounts with encryption, 24/7 monitoring and zero-trust security.'),
         'fees'      => array('fees',      'Fees & pricing',            'Transparent, straightforward fees for everyday banking, transfers, cards and loans.'),
         'branches'  => array('branches',  'Branches & ATMs',           'Find NorthWest branches and surcharge-free ATMs near you.'),
-        'help'      => array('help',      'Help center & FAQ',         'Answers to the questions customers ask most about banking with NorthWest.'),
         'contact'   => array('contact',   'Contact us',                'Reach NorthWest support by phone, secure message, email or in branch — 24 hours a day.'),
         'privacy'   => array('privacy',   'Privacy policy',            'How NorthWest collects, uses and protects your personal information.'),
         'terms'     => array('terms',     'Terms & conditions',        'The terms that govern your NorthWest accounts and services.'),
@@ -68,6 +67,63 @@ class Pages extends MY_Controller
             'active'   => 'loans',
             'content'  => $this->load->view('home/pages/loans', array('title' => 'Loans & mortgages'), TRUE),
         ));
+    }
+
+    /** Help center — renders with article catalog + categories. */
+    public function help()
+    {
+        $this->load->model('Kb_model');
+        $q = trim((string)$this->input->get('q', TRUE));
+        $category = $this->input->get('category', TRUE);
+        $articles = $q !== ''
+            ? $this->Kb_model->search($q, 20)
+            : $this->Kb_model->articles($category ?: NULL);
+        $this->load->view('home/layout', array(
+            'title'    => $q !== '' ? 'Search: '.html_escape($q) : 'Help center & FAQ',
+            'seo_desc' => 'Search the NorthWest help center for answers about accounts, cards, transfers, loans, security and more.',
+            'active'   => 'help',
+            'content'  => $this->load->view('home/pages/help', array(
+                'title'      => 'Help center',
+                'q'          => $q,
+                'category'   => $category,
+                'articles'   => $articles,
+                'categories' => $this->Kb_model->categories(),
+            ), TRUE),
+        ));
+    }
+
+    /** Single knowledge-base article. */
+    public function article($slug = NULL)
+    {
+        $this->load->model('Kb_model');
+        $article = $this->Kb_model->article($slug);
+        if (!$article) show_404();
+        $this->load->view('home/layout', array(
+            'title'    => $article['title'],
+            'seo_desc' => $article['summary'],
+            'active'   => 'help',
+            'content'  => $this->load->view('home/pages/article', array(
+                'article' => $article,
+            ), TRUE),
+        ));
+    }
+
+    /** JSON search endpoint for instant results / autocomplete. */
+    public function help_search()
+    {
+        $this->load->model('Kb_model');
+        $q = trim((string)$this->input->get('q', TRUE));
+        $results = $q !== '' ? $this->Kb_model->search($q, 8) : array();
+        $out = array();
+        foreach ($results as $r) {
+            $out[] = array(
+                'title'   => $r['title'],
+                'summary' => $r['summary'],
+                'category'=> $r['category'],
+                'url'     => site_url('help/'.$r['slug']),
+            );
+        }
+        return $this->json(array('query' => $q, 'results' => $out));
     }
 
     /** Credit & debit cards. */
