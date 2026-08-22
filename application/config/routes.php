@@ -7,6 +7,23 @@ $route['translate_uri_dashes'] = FALSE;
 // Public marketing homepage.
 $route['home'] = 'home/index';
 
+// Public content pages (about, security, fees, branches, help, contact, privacy, terms).
+$route['about']    = 'pages/view/about';
+$route['security-center'] = 'pages/view/security';
+$route['fees']     = 'pages/view/fees';
+$route['branches'] = 'pages/view/branches';
+$route['help']     = 'pages/view/help';
+$route['contact']  = 'pages/view/contact';
+$route['privacy']  = 'pages/view/privacy';
+$route['terms']    = 'pages/view/terms';
+$route['p/(:any)'] = 'pages/view/$1';
+$route['products'] = 'pages/products';
+$route['personal'] = 'pages/products';
+$route['loans-public'] = 'pages/loans';
+$route['borrow']   = 'pages/loans';
+$route['cards-public'] = 'pages/cards';
+$route['calculator'] = 'pages/calculator';
+
 // Administrator sign-in (formerly the customer login at /login).
 $route['login'] = 'auth/login';
 $route['admin'] = 'auth/login';
@@ -37,6 +54,17 @@ $route['transfers'] = 'transfers/index';
 $route['transfers/(:num)/cancel'] = 'transfers/cancel/$1';
 $route['bills'] = 'bills/index';
 $route['bills/pay'] = 'bills/pay';
+
+// Savings goals
+$route['goals'] = 'goals/index';
+$route['goals/create'] = 'goals/create';
+$route['goals/(:num)/contribute'] = 'goals/contribute/$1';
+$route['goals/(:num)/withdraw'] = 'goals/withdraw/$1';
+$route['goals/(:num)/delete'] = 'goals/delete/$1';
+
+// Budget insights
+$route['budget'] = 'budget/index';
+$route['budget/save-limit'] = 'budget/save_limit';
 $route['beneficiaries'] = 'transfers/beneficiaries';
 $route['beneficiaries/(:num)/update'] = 'transfers/beneficiary_update/$1';
 $route['beneficiaries/(:num)/delete'] = 'transfers/beneficiary_delete/$1';

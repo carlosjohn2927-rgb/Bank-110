@@ -138,6 +138,16 @@ CREATE TABLE IF NOT EXISTS lookup_values (
 CREATE TABLE IF NOT EXISTS notification_templates (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, template_key VARCHAR(100) NOT NULL UNIQUE, channel ENUM('email','sms','system') NOT NULL, subject VARCHAR(190), body TEXT NOT NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Customer savings goals (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS savings_goals (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL,
+ name VARCHAR(120) NOT NULL, target_amount DECIMAL(18,2) NOT NULL, saved_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+ target_date DATE NULL, icon VARCHAR(16) NULL, color VARCHAR(20) NULL,
+ status ENUM('active','completed','archived') NOT NULL DEFAULT 'active', created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
+ INDEX idx_savings_goals_user(user_id), CONSTRAINT fk_savings_goal_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET NAMES utf8mb4;
 
 -- Add recipient_routing column to transfers if missing (safe for existing installs).

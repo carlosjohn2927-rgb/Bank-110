@@ -15,10 +15,12 @@
   <div class="home-nav__inner">
     <a class="brand brand-light" href="<?=site_url('/')?>"><i><b></b><b></b><b></b></i>North<span>West</span></a>
     <nav class="home-nav__links" aria-label="Primary">
-      <a href="#features">Features</a>
-      <a href="#products">Accounts</a>
-      <a href="#security">Security</a>
-      <a href="#support">Support</a>
+      <a href="<?=site_url('products')?>">Accounts</a>
+      <a href="<?=site_url('borrow')?>">Loans</a>
+      <a href="<?=site_url('cards-public')?>">Cards</a>
+      <a href="<?=site_url('calculator')?>">Calculator</a>
+      <a href="<?=site_url('security-center')?>">Security</a>
+      <a href="<?=site_url('help')?>">Help</a>
     </nav>
     <div class="home-nav__cta">
       <?=render_language_switcher('lang-switch home-lang')?>
@@ -273,9 +275,30 @@
       <p>Banking that moves with you — secure, human and designed around your life.</p>
     </div>
     <div class="home-foot__cols">
-      <div><h4>Banking</h4><a href="<?=site_url('register')?>">Checking</a><a href="<?=site_url('register')?>">Savings</a><a href="<?=site_url('register')?>">Credit cards</a><a href="<?=site_url('register')?>">Loans</a></div>
-      <div><h4>Company</h4><a href="#features">About us</a><a href="#security">Security</a><a href="#support">Careers</a><a href="<?=site_url('login')?>">Staff login</a></div>
-      <div><h4>Support</h4><a href="<?=site_url('user/login')?>">Sign in</a><a href="<?=site_url('register')?>">Open account</a><a href="#support">Help center</a><a href="#support">Contact</a></div>
+      <div><h4>Banking</h4>
+        <a href="<?=site_url('products')?>">Checking &amp; savings</a>
+        <a href="<?=site_url('cards-public')?>">Credit cards</a>
+        <a href="<?=site_url('borrow')?>">Loans &amp; mortgages</a>
+        <a href="<?=site_url('calculator')?>">Loan calculator</a>
+        <a href="<?=site_url('fees')?>">Fees &amp; pricing</a>
+      </div>
+      <div><h4>Company</h4>
+        <a href="<?=site_url('about')?>">About us</a>
+        <a href="<?=site_url('security-center')?>">Security</a>
+        <a href="<?=site_url('branches')?>">Branches &amp; ATMs</a>
+        <a href="<?=site_url('login')?>">Staff login</a>
+      </div>
+      <div><h4>Support</h4>
+        <a href="<?=site_url('help')?>">Help center / FAQ</a>
+        <a href="<?=site_url('contact')?>">Contact us</a>
+        <a href="<?=site_url('user/login')?>">Sign in</a>
+        <a href="<?=site_url('register')?>">Open account</a>
+      </div>
+      <div><h4>Legal</h4>
+        <a href="<?=site_url('privacy')?>">Privacy policy</a>
+        <a href="<?=site_url('terms')?>">Terms &amp; conditions</a>
+        <a href="<?=site_url('security-center')?>">Fraud &amp; security</a>
+      </div>
     </div>
   </div>
   <div class="home-foot__bottom">

@@ -841,6 +841,115 @@ class Bank_model extends CI_Model
         return $this->db->trans_status()?array(TRUE,array('reference'=>$ref,'rate'=>$rate,'converted'=>$converted,'from_currency'=>$from['currency'],'to_currency'=>$to['currency'])):array(FALSE,'The exchange could not be completed.');
     }
 
+    /* -------------------- Savings Goals -------------------- */
+
+    public function goals($user_id)
+    {
+        return $this->db->where('user_id', (int)$user_id)
+            ->where('status !=', 'archived')
+            ->order_by('status', 'ASC')
+            ->order_by('created_at', 'DESC')
+            ->get('savings_goals')->result_array();
+    }
+
+    public function goal($goal_id, $user_id)
+    {
+        return $this->db->where(array('id' => (int)$goal_id, 'user_id' => (int)$user_id))
+            ->get('savings_goals')->row_array();
+    }
+
+    public function create_goal($user_id, $data)
+    {
+        $now = date('Y-m-d H:i:s');
+        $row = array(
+            'user_id'       => (int)$user_id,
+            'name'          => substr(trim((string)$data['name']), 0, 120),
+            'target_amount' => round((float)$data['target_amount'], 2),
+            'saved_amount'  => 0,
+            'target_date'   => !empty($data['target_date']) ? $data['target_date'] : NULL,
+            'icon'          => substr((string)($data['icon'] ?? '🎯'), 0, 16),
+            'color'         => substr((string)($data['color'] ?? '#1468e5'), 0, 20),
+            'status'        => 'active',
+            'created_at'    => $now,
+            'updated_at'    => $now,
+        );
+        $this->db->insert('savings_goals', $row);
+        return $this->db->insert_id();
+    }
+
+    public function contribute_goal($goal_id, $user_id, $amount)
+    {
+        $amount = round((float)$amount, 2);
+        if ($amount <= 0) return array(FALSE, 'Enter an amount greater than zero.');
+        $goal = $this->goal($goal_id, $user_id);
+        if (!$goal) return array(FALSE, 'Goal not found.');
+        $new_amount = round((float)$goal['saved_amount'] + $amount, 2);
+        $status = $new_amount >= (float)$goal['target_amount'] ? 'completed' : 'active';
+        $this->db->where('id', $goal['id'])->update('savings_goals', array(
+            'saved_amount' => $new_amount, 'status' => $status, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        return array(TRUE, array('saved' => $new_amount, 'status' => $status, 'completed' => $status === 'completed'));
+    }
+
+    public function withdraw_goal($goal_id, $user_id, $amount)
+    {
+        $amount = round((float)$amount, 2);
+        if ($amount <= 0) return array(FALSE, 'Enter an amount greater than zero.');
+        $goal = $this->goal($goal_id, $user_id);
+        if (!$goal) return array(FALSE, 'Goal not found.');
+        if ($amount > (float)$goal['saved_amount']) return array(FALSE, 'You cannot withdraw more than you have saved.');
+        $new_amount = round((float)$goal['saved_amount'] - $amount, 2);
+        $this->db->where('id', $goal['id'])->update('savings_goals', array(
+            'saved_amount' => $new_amount, 'status' => 'active', 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        return array(TRUE, array('saved' => $new_amount));
+    }
+
+    public function delete_goal($goal_id, $user_id)
+    {
+        return $this->db->where(array('id' => (int)$goal_id, 'user_id' => (int)$user_id))->delete('savings_goals');
+    }
+
+    /* -------------------- Budget insights -------------------- */
+
+    /**
+     * Monthly spending grouped by category for the last N months.
+     * Returns [ ['month'=>'YYYY-MM', 'category'=>..., 'total'=>float], ... ]
+     */
+    public function monthly_spending_by_category($user_id, $months = 6)
+    {
+        $since = date('Y-m-01', strtotime('-' . ((int)$months - 1) . ' months'));
+        $rows = $this->db->select("DATE_FORMAT(t.created_at,'%Y-%m') AS month, t.category, SUM(t.amount) AS total")
+            ->from('transactions t')->join('accounts a', 'a.id=t.account_id')
+            ->where('a.user_id', (int)$user_id)
+            ->where('t.type', 'debit')->where('t.status', 'completed')
+            ->where('t.created_at >=', $since . ' 00:00:00')
+            ->group_by('month, t.category')
+            ->order_by('month', 'ASC')->order_by('total', 'DESC')
+            ->get()->result_array();
+        return $rows;
+    }
+
+    /** Income vs expense totals for each of the last N months. */
+    public function monthly_income_expense($user_id, $months = 6)
+    {
+        $since = date('Y-m-01', strtotime('-' . ((int)$months - 1) . ' months'));
+        $rows = $this->db->select("DATE_FORMAT(t.created_at,'%Y-%m') AS month, t.type, SUM(t.amount) AS total")
+            ->from('transactions t')->join('accounts a', 'a.id=t.account_id')
+            ->where('a.user_id', (int)$user_id)->where('t.status', 'completed')
+            ->where('t.created_at >=', $since . ' 00:00:00')
+            ->group_by('month, t.type')
+            ->order_by('month', 'ASC')
+            ->get()->result_array();
+        $out = array();
+        foreach ($rows as $r) {
+            $m = $r['month'];
+            if (!isset($out[$m])) $out[$m] = array('income' => 0.0, 'expenses' => 0.0);
+            $out[$m][$r['type'] === 'credit' ? 'income' : 'expenses'] = (float)$r['total'];
+        }
+        return $out;
+    }
+
     public function save_settings($values)
     {
         foreach($values as $key=>$value)$this->db->replace('settings',array('setting_key'=>$key,'setting_value'=>$value,'updated_at'=>date('Y-m-d H:i:s')));
