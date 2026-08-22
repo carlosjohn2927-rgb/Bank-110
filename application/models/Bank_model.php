@@ -1026,7 +1026,7 @@ class Bank_model extends CI_Model
      * Create a notification — but only if the user's preferences allow that
      * type. Security notifications are always stored.
      */
-    public function OLDNAME
+    public function create_notification($user_id, $type, $title, $body = NULL, $link = NULL)
     {
         if(!$this->notification_enabled($user_id, $type)) return FALSE;
         return $this->add_notification($user_id, $type, $title, $body, $link);
