@@ -7,7 +7,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * transfers complete automatically once their date arrives. It is safe to hit
  * over HTTP with a cron-triggered request, or via CLI.
  *
- *   Cron:  */15 * * * *  wget -q -O /dev/null "https://YOURDOMAIN/scheduler/run?key=YOUR_SCHEDULER_KEY"
+ *   Cron:  0,15,30,45 * * * *  wget -q -O /dev/null "https://YOURDOMAIN/scheduler/run?key=YOUR_SCHEDULER_KEY"
  *
  * The key is compared against VP_SCHEDULER_KEY in the .env to prevent abuse.
  */
