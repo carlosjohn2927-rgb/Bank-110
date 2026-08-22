@@ -72,10 +72,26 @@ class Site_operator_engine
                 if (!isset($context['transactions'])) {
                     $context['transactions'] = $this->CI->Bank_model->transactions_for_user($uid, 6);
                 }
+                // Savings goals + budget insights (used by the goals/budget intents).
+                if (!isset($context['goals'])) {
+                    $context['goals'] = method_exists($this->CI->Bank_model, 'goals')
+                        ? $this->CI->Bank_model->goals($uid) : array();
+                }
+                if (!isset($context['monthlySummary'])) {
+                    $context['monthlySummary'] = method_exists($this->CI->Bank_model, 'monthly_summary')
+                        ? $this->CI->Bank_model->monthly_summary($uid) : array('income' => 0, 'expenses' => 0);
+                }
+                if (!isset($context['spendingBreakdown'])) {
+                    $context['spendingBreakdown'] = method_exists($this->CI->Bank_model, 'spending_breakdown')
+                        ? $this->CI->Bank_model->spending_breakdown($uid, 5) : array();
+                }
             } catch (Exception $e) {}
         } else {
             $context['accounts']     = isset($context['accounts']) ? $context['accounts'] : array();
             $context['transactions'] = isset($context['transactions']) ? $context['transactions'] : array();
+            $context['goals']        = array();
+            $context['monthlySummary'] = array('income' => 0, 'expenses' => 0);
+            $context['spendingBreakdown'] = array();
         }
         return $context;
     }
@@ -93,6 +109,8 @@ class Site_operator_engine
             'beneficiary'   => '/(beneficiar|add a payee|save a recipient|recipient list)/i',
             'card'          => '/(card|freeze|block|unfreeze|limit|cvv|pin|card controls|virtual card)/i',
             'loan'          => '/(loan|borrow|credit|mortgage|finance)/i',
+            'goals'         => '/(savings goal|saving goal|my goal|goal(s| progress)?|save up|save for|target (amount|saving)|how (close|much).*(goal|saved))/i',
+            'budget'        => '/(budget|spending|spent|expense|what did i spend|where does my money|category|categories|savings rate|how much did i (spend|save))/i',
             'security'      => '/(secure|security|safe|protect|phishing|fraud|hack|password|otp|2fa|two factor|verification code)/i',
             'fees'          => '/(fee|charge|cost|limit|how much does it cost|free)/i',
             'open_account'  => '/(open (an|a)? ?account|new account|create account|become a customer|register|join)/i',
@@ -120,12 +138,12 @@ class Site_operator_engine
         switch ($id) {
             case 'greeting':
                 if ($user) {
-                    return array('text' => "Hello {$first} 👋 Welcome to {$institution}. I can check your balance, show recent activity, explain transfers, cards, loans and security, and guide you to support. What would you like help with?",
+                    return array('text' => "Hello {$first} 👋 Welcome to {$institution}. I can check your balance, show recent activity, track savings goals, analyze your budget, and explain transfers, cards, loans and security. What would you like help with?",
                         'quick' => array(
                             array('label' => '💰 My balance', 'value' => 'What is my balance?'),
-                            array('label' => '📊 Recent activity', 'value' => 'Show my recent transactions'),
+                            array('label' => '🎯 Savings goals', 'value' => 'How are my savings goals?'),
+                            array('label' => '📊 My budget', 'value' => 'How is my spending this month?'),
                             array('label' => '↗ Send money', 'value' => 'How do I send money?'),
-                            array('label' => '🛟 Support', 'value' => 'I need help from support'),
                         ));
                 }
                 return array('text' => "Hello 👋 Welcome to {$institution}. I can help you learn about our services, transfers, cards, loans, fees and security. To see live account info, please sign in first.",
@@ -196,6 +214,75 @@ class Site_operator_engine
                     'quick' => array(array('label' => '▥ View loans', 'value' => 'Tell me more about loans')),
                     'actions' => array(array('label' => 'Open Loans', 'url' => '/loans')));
 
+            case 'goals':
+                if (!$user) {
+                    return array('text' => "Savings goals let you set a target, add money as you go, and watch your progress grow. Once you sign in you can create goals for a holiday, a home or anything else — it's completely free.",
+                        'quick' => array(array('label' => '🔑 Sign in', 'value' => 'How do I sign in?')),
+                        'actions' => array(array('label' => 'Go to sign in', 'url' => '/user/login')));
+                }
+                $goals = (array) $context['goals'];
+                if (empty($goals)) {
+                    return array('text' => "You don't have any savings goals yet. 🎯\n\nCreate one on the Savings goals page — give it a name, a target amount and an optional date, then add money whenever you like. You can track every goal's progress at a glance.",
+                        'quick' => array(
+                            array('label' => '💰 My balance', 'value' => 'What is my balance?'),
+                            array('label' => '📊 My budget', 'value' => 'How is my spending this month?'),
+                        ),
+                        'actions' => array(array('label' => 'Create a goal', 'url' => '/goals')));
+                }
+                $totalSaved = 0; $totalTarget = 0; $lines = array(); $completed = 0;
+                foreach ($goals as $g) {
+                    $saved = (float) $g['saved_amount']; $target = (float) $g['target_amount'];
+                    $totalSaved += $saved; $totalTarget += $target;
+                    if ($g['status'] === 'completed') $completed++;
+                    $pct = $target > 0 ? min(100, round(($saved / $target) * 100)) : 0;
+                    $lines[] = "  • {$g['name']} — ".$this->money($saved, $currency).' of '.$this->money($target, $currency)." ({$pct}%)";
+                }
+                $overall = $totalTarget > 0 ? round(($totalSaved / $totalTarget) * 100) : 0;
+                $summary = "Across ".count($goals)." goal".(count($goals) === 1 ? '' : 's')." you've saved ".$this->money($totalSaved, $currency)." of ".$this->money($totalTarget, $currency)." — that's {$overall}% of the way";
+                if ($completed > 0) $summary .= ", and {$completed} goal".($completed === 1 ? ' is' : 's are')." already complete 🎉";
+                return array('text' => $summary.".\n\n".implode("\n", $lines)."\n\nOpen Savings goals to add money, create a new goal or adjust a target.",
+                    'quick' => array(
+                        array('label' => '➕ Add money to a goal', 'value' => 'I want to add money to a goal'),
+                        array('label' => '📊 My budget', 'value' => 'How is my spending this month?'),
+                        array('label' => '💰 My balance', 'value' => 'What is my balance?'),
+                    ),
+                    'actions' => array(array('label' => 'Open Savings goals', 'url' => '/goals')));
+
+            case 'budget':
+                if (!$user) {
+                    return array('text' => "Budget & Insights shows your income versus spending, breaks down where your money goes by category, and lets you set monthly limits — once you're signed in.",
+                        'quick' => array(array('label' => '🔑 Sign in', 'value' => 'How do I sign in?')),
+                        'actions' => array(array('label' => 'Go to sign in', 'url' => '/user/login')));
+                }
+                $m = $context['monthlySummary'];
+                $income = (float) ($m['income'] ?? 0);
+                $expenses = (float) ($m['expenses'] ?? 0);
+                $net = $income - $expenses;
+                $rate = $income > 0 ? round(($net / $income) * 100) : 0;
+                $lines = array();
+                foreach ((array) $context['spendingBreakdown'] as $row) {
+                    $lines[] = "  • {$row['category']} — ".$this->money($row['total'], $currency);
+                }
+                $text = "Here's your money picture for ".date('F').":\n\n";
+                $text .= "  Income:    ".$this->money($income, $currency)."\n";
+                $text .= "  Spent:     ".$this->money($expenses, $currency)."\n";
+                $text .= "  Net saved: ".$this->money(max(0, $net), $currency)." ({$rate}% savings rate)\n";
+                if (!empty($lines)) {
+                    $text .= "\nTop spending categories:\n".implode("\n", array_slice($lines, 0, 4));
+                }
+                if ($income > 0 && $net < 0) {
+                    $text .= "\n\n⚠️ You're spending more than you've earned this month — consider setting a category limit on the Budget page.";
+                } elseif ($rate >= 20) {
+                    $text .= "\n\n💪 Great job — a savings rate of 20% or more puts you well ahead.";
+                }
+                return array('text' => $text,
+                    'quick' => array(
+                        array('label' => '🎯 My goals', 'value' => 'How are my savings goals?'),
+                        array('label' => '📊 Recent activity', 'value' => 'Show my recent transactions'),
+                        array('label' => '↗ Send money', 'value' => 'How do I send money?'),
+                    ),
+                    'actions' => array(array('label' => 'Open Budget', 'url' => '/budget')));
+
             case 'security':
                 return array('text' => "Your security is our priority. We use 256-bit encryption, automatic session monitoring and secure verification codes. A few tips:\n\n• Never share your password or verification codes.\n• Only sign in through the official NorthWest website.\n• Freeze your card instantly if it's ever lost or stolen.\n• We will never ask for your password by phone, email or chat.\n\nIf you ever suspect fraud, contact our support team immediately.",
                     'quick' => array(array('label' => '🛟 Contact support', 'value' => 'I need help from support')),
@@ -240,12 +327,12 @@ class Site_operator_engine
     protected function fallbackReply()
     {
         return array(
-            'text' => "I'm not sure I understood that. I can help with your balance, transactions, transfers, cards, loans, fees and security — or connect you with the support team.\n\nTry one of the quick options below, or just rephrase your question.",
+            'text' => "I'm not sure I understood that. I can help with your balance, savings goals, budget and spending, transactions, transfers, cards, loans, fees and security — or connect you with the support team.\n\nTry one of the quick options below, or just rephrase your question.",
             'quick' => array(
                 array('label' => '💰 My balance', 'value' => 'What is my balance?'),
+                array('label' => '🎯 Savings goals', 'value' => 'How are my savings goals?'),
+                array('label' => '📊 My budget', 'value' => 'How is my spending this month?'),
                 array('label' => '↗ Send money', 'value' => 'How do I send money?'),
-                array('label' => '🔐 Security', 'value' => 'How is my account secure?'),
-                array('label' => '🛟 Support', 'value' => 'I need help from support'),
             ),
             'actions' => array(),
         );

@@ -16,13 +16,13 @@
   var busy = false;
   var initGreeted = false;
 
-  var WELCOME = 'Hi, I\u2019m your NorthWest Assistant \u2726 I run entirely inside this website \u2014 no external AI services. Ask me about your balance, transactions, transfers, cards, loans, fees or security.';
+  var WELCOME = 'Hi, I\u2019m your NorthWest Assistant \u2726 I run entirely inside this website \u2014 no external AI services. Ask me about your balance, savings goals, budget and spending, transactions, transfers, cards, loans, fees or security.';
 
   var GREET_QUICK = [
     { label: '💰 My balance', value: 'What is my balance?' },
-    { label: '↗ Send money', value: 'How do I send money?' },
-    { label: '🔐 Security', value: 'How is my account secure?' },
-    { label: '🛟 Support', value: 'I need help from support' }
+    { label: '🎯 Savings goals', value: 'How are my savings goals?' },
+    { label: '📊 My budget', value: 'How is my spending this month?' },
+    { label: '↗ Send money', value: 'How do I send money?' }
   ];
 
   function openPanel() {

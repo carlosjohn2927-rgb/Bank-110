@@ -19,6 +19,22 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('.bell-wrap'))document.querySelectorAll('.bell-drop').forEach(function(d){d.hidden=true;});
 });
 
+// Mark a bell notification read on click via AJAX (then follow its link)
+document.querySelectorAll('.app-notif a[data-notif]').forEach(function(a){
+  a.addEventListener('click',function(){
+    var id=a.dataset.notif;if(!id)return;
+    var badge=document.querySelector('.bell i b');
+    var base=document.querySelector('[data-notif-read-url]')?.dataset.notifReadUrl || '/notifications/read/';
+    try{
+      fetch(base+id,{headers:{'X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
+        .then(function(r){return r.json();})
+        .then(function(res){if(res&&res.ok&&badge){var n=Math.max(0,(parseInt(badge.textContent,10)||1)-1);badge.textContent=n;if(n===0)badge.remove();}})
+        .catch(function(){});
+    }catch(err){}
+    a.classList.remove('bell-unread');
+  });
+});
+
 // Header search — navigate on Enter
 document.querySelectorAll('.search input').forEach(function(input){
   var url=input.getAttribute('data-search');

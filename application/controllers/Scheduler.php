@@ -19,7 +19,8 @@ class Scheduler extends CI_Controller
         if($key==='' || !hash_equals($key,(string)$this->input->get('key'))){return $this->_json(array('ok'=>FALSE,'error'=>'Forbidden'),403);}
         $this->load->database();
         $count=$this->Bank_model->process_scheduled();
-        return $this->_json(array('ok'=>TRUE,'processed'=>$count));
+        $rates=$this->Bank_model->snapshot_exchange_rates();
+        return $this->_json(array('ok'=>TRUE,'processed'=>$count,'rates_snapshotted'=>$rates));
     }
 
     private function _json($data,$status=200)

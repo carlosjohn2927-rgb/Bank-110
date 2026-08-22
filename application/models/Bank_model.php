@@ -180,7 +180,7 @@ class Bank_model extends CI_Model
         $this->db->trans_complete();
         if ($this->db->trans_status() && function_exists('notify_user')) {
             try { notify_user($user_id, 'Transfer '.$reference.' submitted', '<p>Your transfer of '.$this->money_local($amount, $account['currency']).' to '.htmlspecialchars($data['recipient_name']).' has been submitted and is being processed.</p><p>Reference: <b>'.$reference.'</b></p>','','notify_transfers'); } catch (Exception $e) {}
-            try { $this->add_notification($user_id,'transfer','Transfer '.$reference.' submitted','To '.$data['recipient_name'].' · '.$this->money_local($amount, $account['currency']),'transactions'); } catch (Exception $e) {}
+            try { $this->notify_user($user_id,'transfer','Transfer '.$reference.' submitted','To '.$data['recipient_name'].' · '.$this->money_local($amount, $account['currency']),'transactions'); } catch (Exception $e) {}
         }
         return $this->db->trans_status() ? array(TRUE, $reference) : array(FALSE, 'The transfer could not be submitted.');
     }
@@ -214,6 +214,7 @@ class Bank_model extends CI_Model
             'is_frozen'=>0,'online_enabled'=>1,'international_enabled'=>0,'daily_limit'=>round((float)($data['daily_limit']?:10000),2),'created_at'=>$now,'updated_at'=>$now
         ));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user_id,'card','New card issued','A new card ending in '.$last_four.' has been added to your account.','cards'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,'Card ending in '.$last_four.' issued.'):array(FALSE,'Unable to issue the card.');
     }
 
@@ -343,6 +344,78 @@ class Bank_model extends CI_Model
         return array('checking'=>$pct('checking'),'savings'=>$pct('savings'),'investment'=>$pct('investment'),'total'=>array_sum($out));
     }
 
+    /* -------------------- Admin analytics -------------------- */
+
+    /**
+     * Daily transaction volume + total value for a date range, oldest→newest.
+     * Returns labels (short dates), counts and amounts.
+     */
+    public function transaction_volume_range($days = 30)
+    {
+        $days = (int) $days;
+        $out = array('labels' => array(), 'counts' => array(), 'amounts' => array());
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-{$i} days"));
+            $row = $this->db
+                ->select('COUNT(*) c, COALESCE(SUM(amount),0) total')
+                ->where('DATE(created_at)', $day)
+                ->get('transactions')->row();
+            $out['labels'][]  = date($days > 14 ? 'M j' : 'D', strtotime($day));
+            $out['counts'][]  = (int) ($row->c ?? 0);
+            $out['amounts'][] = round((float)($row->total ?? 0), 2);
+        }
+        return $out;
+    }
+
+    /** New-customer signups per day over a range. */
+    public function signups_range($days = 30)
+    {
+        $days = (int) $days;
+        $out = array('labels' => array(), 'counts' => array());
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-{$i} days"));
+            $c = $this->db->where('role', 'customer')->where('DATE(created_at)', $day)->count_all_results('users');
+            $out['labels'][] = date($days > 14 ? 'M j' : 'D', strtotime($day));
+            $out['counts'][] = (int) $c;
+        }
+        return $out;
+    }
+
+    /** Deposit/withdrawal breakdown by category over a range (debits by category). */
+    public function spending_by_category_range($days = 30)
+    {
+        $days = (int) $days;
+        $since = date('Y-m-d 00:00:00', strtotime('-'.($days - 1).' days'));
+        $rows = $this->db
+            ->select('category, COUNT(*) c, COALESCE(SUM(amount),0) total')
+            ->where('type', 'debit')->where('status', 'completed')
+            ->where('created_at >=', $since)
+            ->group_by('category')->order_by('total', 'DESC')
+            ->limit(8)->get('transactions')->result_array();
+        return $rows;
+    }
+
+    /** Aggregate KPIs over a date range. */
+    public function admin_kpis_range($days = 30)
+    {
+        $days = (int) $days;
+        $since = date('Y-m-d 00:00:00', strtotime('-'.($days - 1).' days'));
+        $tx = $this->db
+            ->select('COUNT(*) c, COALESCE(SUM(amount),0) total')
+            ->where('status', 'completed')->where('created_at >=', $since)
+            ->get('transactions')->row();
+        $newCustomers = $this->db->where('role', 'customer')->where('created_at >=', $since)->count_all_results('users');
+        $newAccounts = $this->db->where('created_at >=', $since)->count_all_results('accounts');
+        return array(
+            'transactions'  => (int) ($tx->c ?? 0),
+            'volume'        => round((float)($tx->total ?? 0), 2),
+            'new_customers' => (int) $newCustomers,
+            'new_accounts'  => (int) $newAccounts,
+            'days'          => $days,
+        );
+    }
+
+
     public function admin_metrics()
     {
         $metrics = array();
@@ -351,7 +424,7 @@ class Bank_model extends CI_Model
         $metrics['transactions_today'] = $this->db->where('DATE(created_at)',date('Y-m-d'))->count_all_results('transactions');
         $metrics['pending'] = $this->db->where('status','pending')->count_all_results('transfers');
         $metrics['scheduled'] = $this->db->where('status','pending')->where('scheduled_for >',date('Y-m-d'))->count_all_results('transfers');
-        $metrics['pending_deposits'] = $this->db->where('status','pending')->where('type','credit')->count_all_results('transactions');
+        $metrics['pending_deposits'] = $this->db->where('status','pending')->count_all_results('check_deposits');
         $metrics['cards'] = $this->db->count_all_results('cards');
         $metrics['active_loans'] = $this->db->where('status','active')->count_all_results('loans');
         return $metrics;
@@ -427,7 +500,7 @@ class Bank_model extends CI_Model
         $this->db->trans_complete();
         if($this->db->trans_status() && function_exists('notify_user')){
             try{notify_user((int)$transfer['user_id'],'Transfer '.$transfer['reference'].' completed','<p>Your transfer of '.$this->money_local($transfer['amount'],$transfer['currency']).' to '.htmlspecialchars($transfer['recipient_name']).' has been completed.</p>','','notify_transfers');}catch(Exception $e){}
-            try { $this->add_notification((int)$transfer['user_id'],'transfer','Transfer '.$transfer['reference'].' completed','To '.$transfer['recipient_name'].' · '.$this->money_local($transfer['amount'],$transfer['currency']),'transactions'); } catch (Exception $e) {}
+            try { $this->notify_user((int)$transfer['user_id'],'transfer','Transfer '.$transfer['reference'].' completed','To '.$transfer['recipient_name'].' · '.$this->money_local($transfer['amount'],$transfer['currency']),'transactions'); } catch (Exception $e) {}
         }
         return $this->db->trans_status()?array(TRUE,$transfer['reference']):array(FALSE,'The transfer could not be completed.');
     }
@@ -521,7 +594,7 @@ class Bank_model extends CI_Model
             try {
                 $t=$this->ticket($id);
                 if(!empty($t['email'])) notify_user((int)$t['user_id'], 'Update on support request '.$t['reference'], '<p>NorthWest support has replied to your request <b>'.$t['reference'].'</b>.</p><p><i>'.htmlspecialchars(substr($message,0,200)).'</i></p>','','notify_tickets');
-                try { $this->add_notification((int)$t['user_id'],'ticket','Support reply on '.$t['reference'],'NorthWest support replied to your request','support/'.$id); } catch (Exception $e) {}
+                try { $this->notify_user((int)$t['user_id'],'ticket','Support reply on '.$t['reference'],'NorthWest support replied to your request','support/'.$id); } catch (Exception $e) {}
             } catch (Exception $e) {}
         }
         return $this->db->trans_status();
@@ -566,6 +639,7 @@ class Bank_model extends CI_Model
         $this->db->where('id',$loan['id'])->update('loans',array('outstanding_balance'=>$new_balance,'payments_remaining'=>$remaining,'status'=>$status,'updated_at'=>$now));
         $this->db->insert('transactions',array('account_id'=>$account['id'],'reference'=>$reference,'type'=>'debit','category'=>'Loan payment','description'=>'Loan payment '.$loan['reference'],'amount'=>$amount,'currency'=>$account['currency'],'balance_after'=>(float)$account['available_balance']-$amount,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user_id,'loan',$status==='paid'?'Loan paid off':'Loan payment received',$status==='paid'?'Congratulations — loan '.$loan['reference'].' is fully repaid.':'Your payment of '.$this->money_local($amount,$account['currency']).' was received.','loans'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'The loan payment could not be processed.');
     }
 
@@ -588,6 +662,7 @@ class Bank_model extends CI_Model
             'status'=>'active','created_at'=>$now,'updated_at'=>$now
         ));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user_id,'loan','Loan application approved','Your loan '.$reference.' has been opened. Monthly payment '.$this->money_local($payment,'USD').'.','loans'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'Unable to process the loan application.');
     }
 
@@ -601,6 +676,7 @@ class Bank_model extends CI_Model
         $this->db->trans_start();
         $this->db->insert('cards',array('user_id'=>$account['user_id'],'account_id'=>$account['id'],'cardholder_name'=>$account['first_name'].' '.$account['last_name'],'masked_number'=>'•••• •••• •••• '.$last_four,'last_four'=>$last_four,'expiry_month'=>random_int(1,12),'expiry_year'=>(int)date('Y')+random_int(3,5),'card_type'=>in_array($data['card_type'],array('virtual','physical'),TRUE)?$data['card_type']:'physical','network'=>'Visa','status'=>'active','is_frozen'=>0,'online_enabled'=>1,'international_enabled'=>1,'daily_limit'=>round((float)($data['daily_limit']?:10000),2),'created_at'=>$now,'updated_at'=>$now));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($account['user_id'],'card','New card issued','A new card ending in '.$last_four.' has been added to your account.','cards'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,'Card ending in '.$last_four.' issued.'):array(FALSE,'Unable to issue the card.');
     }
 
@@ -642,6 +718,7 @@ class Bank_model extends CI_Model
         $this->db->trans_start();
         $this->db->insert('loans',array('user_id'=>$user['id'],'reference'=>$reference,'type'=>trim($data['type'] ?: 'Personal loan'),'principal'=>$amount,'outstanding_balance'=>$amount,'interest_rate'=>$rate,'monthly_payment'=>$payment,'next_payment_date'=>date('Y-m-d',strtotime('+1 month')),'term_months'=>$term,'payments_remaining'=>$term,'status'=>'active','created_at'=>$now,'updated_at'=>$now));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user['id'],'loan','Loan issued','A loan '.$reference.' has been opened on your account. Monthly payment '.$this->money_local($payment,'USD').'.','loans'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'Unable to create the loan.');
     }
 
@@ -726,6 +803,125 @@ class Bank_model extends CI_Model
         return $this->db->where('id',$user_id)->update('users',array('twofa_enabled'=>$enabled?'1':'0','updated_at'=>date('Y-m-d H:i:s')));
     }
 
+    /* -------------------- TOTP authenticator app -------------------- */
+
+    /** Begin TOTP enrollment: generate + store an unconfirmed secret and return it. */
+    public function totp_begin_enrollment($user_id)
+    {
+        $this->load->library('Totp');
+        $secret = Totp::generate_secret();
+        $this->db->where('id', $user_id)->update('users', array(
+            'totp_secret' => $secret, 'totp_confirmed' => 0, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        return $secret;
+    }
+
+    /** Confirm a TOTP code during enrollment; returns [bool, string]. */
+    public function totp_confirm_enrollment($user_id, $code)
+    {
+        $user = $this->db->select('id,totp_secret,totp_confirmed')->where('id', $user_id)->get('users')->row_array();
+        if (!$user || empty($user['totp_secret'])) return array(FALSE, 'No enrollment in progress.');
+        if (!empty($user['totp_confirmed'])) return array(FALSE, 'Authenticator app is already set up.');
+        $this->load->library('Totp');
+        if (!Totp::verify($code, $user['totp_secret'])) return array(FALSE, 'That code is incorrect or has expired.');
+        $backup = Totp::generate_backup_codes(8);
+        $this->db->trans_start();
+        $this->db->where('id', $user_id)->update('users', array(
+            'totp_secret' => $user['totp_secret'], 'totp_confirmed' => 1, 'twofa_enabled' => 1,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        $this->save_backup_codes($user_id, $backup);
+        $this->db->trans_complete();
+        return $this->db->trans_status() ? array(TRUE, $backup) : array(FALSE, 'Unable to complete enrollment.');
+    }
+
+    /** Disable TOTP and clear secret + backup codes. */
+    public function totp_disable($user_id)
+    {
+        return $this->db->where('id', $user_id)->update('users', array(
+            'totp_secret' => NULL, 'totp_confirmed' => 0, 'backup_codes_hash' => NULL,
+            'twofa_enabled' => 0, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+    }
+
+    /**
+     * Verify a TOTP code OR a backup code during sign-in.
+     * Returns 'totp', 'backup', or FALSE.
+     */
+    public function totp_verify($user, $code)
+    {
+        $code = trim((string)$code);
+        if (empty($user['totp_secret'])) return FALSE;
+        $this->load->library('Totp');
+        // A 6-digit code is a TOTP attempt; otherwise treat it as a backup code.
+        if (preg_match('/^\d{6}$/', $code)) {
+            return Totp::verify($code, $user['totp_secret']) ? 'totp' : FALSE;
+        }
+        $normalized = strtoupper(preg_replace('/\s+/', '', $code));
+        if (!empty($user['backup_codes_hash'])) {
+            $codes = explode(',', $normalized); // accept a single code too
+            $stored = array_filter(array_map('trim', explode(',', $this->decrypt_backup_codes($user))));
+            if (empty($stored)) {
+                // Fallback: hashed storage (one-time-use mode).
+                if (Totp::verify_backup_code($normalized, $user['backup_codes_hash'])) {
+                    $this->db->where('id', $user['id'])->update('users', array('backup_codes_hash' => NULL, 'updated_at' => date('Y-m-d H:i:s')));
+                    return 'backup';
+                }
+            } else {
+                // Reversible storage so a single code can be consumed while the rest remain.
+                foreach ($stored as $i => $known) {
+                    if (hash_equals(strtoupper($known), $normalized)) {
+                        unset($stored[$i]);
+                        $this->save_backup_codes((int)$user['id'], array_values($stored));
+                        return 'backup';
+                    }
+                }
+            }
+        }
+        return FALSE;
+    }
+
+    /**
+     * Store backup codes reversible-but-encrypted with the app's encryption key.
+     * Encryption uses the AEAD-validated CI encryption class when an encryption
+     * key is configured; otherwise falls back to a keyed HMAC scheme so codes
+     * remain one-time-use without ever being stored in plaintext.
+     */
+    private function save_backup_codes($user_id, array $codes)
+    {
+        $payload = json_encode(array_values($codes));
+        $key = (string) getenv('VP_ENCRYPTION_KEY') ?: (string) config_item('encryption_key');
+        if ($key !== '' && function_exists('openssl_encrypt')) {
+            $iv = random_bytes(16);
+            $cipher = openssl_encrypt($payload, 'AES-256-CBC', hash('sha256', $key, TRUE), OPENSSL_RAW_DATA, $iv);
+            $stored = 'v2:'.base64_encode($iv).'$'.base64_encode($cipher);
+        } else {
+            // Deterministic obfuscation (NOT strong — set VP_ENCRYPTION_KEY in production).
+            $stored = 'v1:'.base64_encode(str_rot13($payload));
+        }
+        $this->db->where('id', $user_id)->update('users', array('backup_codes_hash' => $stored, 'updated_at' => date('Y-m-d H:i:s')));
+    }
+
+    private function decrypt_backup_codes($user)
+    {
+        $raw = (string) ($user['backup_codes_hash'] ?? '');
+        if ($raw === '' || strpos($raw, 'v1:') !== 0) return '';
+        if (strpos($raw, 'v2:') === 0) {
+            $key = (string) getenv('VP_ENCRYPTION_KEY') ?: (string) config_item('encryption_key');
+            if ($key === '' || !function_exists('openssl_decrypt')) return '';
+            list(, $rest) = explode(':', $raw, 2);
+            list($iv64, $ct64) = explode('$', $rest, 2);
+            $iv = base64_decode($iv64); $ct = base64_decode($ct64);
+            $plain = openssl_decrypt($ct, 'AES-256-CBC', hash('sha256', $key, TRUE), OPENSSL_RAW_DATA, $iv);
+            $arr = json_decode($plain, TRUE);
+            return is_array($arr) ? implode(',', $arr) : '';
+        }
+        // v1 obfuscation
+        list(, $b64) = explode(':', $raw, 2);
+        $arr = json_decode(str_rot13(base64_decode($b64)), TRUE);
+        return is_array($arr) ? implode(',', $arr) : '';
+    }
+
     public function change_password($user_id,$current,$new)
     {
         $user=$this->db->select('password_hash')->where('id',$user_id)->get('users')->row_array();
@@ -747,11 +943,26 @@ class Bank_model extends CI_Model
         ));
     }
 
-    public function notifications($user_id, $limit=20, $unread_only=FALSE)
+    public function notifications($user_id, $limit=20, $unread_only=FALSE, $filter=NULL, $offset=0)
     {
         $this->db->where('user_id',(int)$user_id);
         if($unread_only)$this->db->where('is_read',0);
+        if($filter && in_array($filter,array('unread','transfer','ticket','security','loan','card','deposit','general'),TRUE)){
+            if($filter==='unread')$this->db->where('is_read',0);
+            else $this->db->where('type',$filter);
+        }
+        if($offset>0)$this->db->offset((int)$offset);
         return $this->db->order_by('id','DESC')->limit($limit)->get('user_notifications')->result_array();
+    }
+
+    public function count_notifications($user_id, $filter=NULL)
+    {
+        $this->db->where('user_id',(int)$user_id);
+        if($filter && in_array($filter,array('unread','transfer','ticket','security','loan','card','deposit','general'),TRUE)){
+            if($filter==='unread')$this->db->where('is_read',0);
+            else $this->db->where('type',$filter);
+        }
+        return $this->db->count_all_results('user_notifications');
     }
 
     public function unread_notification_count($user_id)
@@ -759,9 +970,66 @@ class Bank_model extends CI_Model
         return $this->db->where('user_id',(int)$user_id)->where('is_read',0)->count_all_results('user_notifications');
     }
 
+    /** Unread count grouped by type (for filter badges). */
+    public function unread_counts_by_type($user_id)
+    {
+        $rows=$this->db->select('type, COUNT(*) c')->where('user_id',(int)$user_id)->where('is_read',0)->group_by('type')->get('user_notifications')->result_array();
+        $out=array(); foreach($rows as $r)$out[$r['type']]=(int)$r['c'];
+        return $out;
+    }
+
+    public function notification($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->get('user_notifications')->row_array();
+    }
+
+    public function mark_notification_read($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id,'is_read'=>0))->update('user_notifications', array('is_read'=>1));
+    }
+
     public function mark_notifications_read($user_id)
     {
         return $this->db->where('user_id',(int)$user_id)->where('is_read',0)->update('user_notifications', array('is_read'=>1));
+    }
+
+    public function delete_notification($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->delete('user_notifications');
+    }
+
+    public function delete_all_notifications($user_id)
+    {
+        return $this->db->where('user_id',(int)$user_id)->delete('user_notifications');
+    }
+
+    /**
+     * Whether a notification TYPE is enabled for this user according to their
+     * stored preferences. Security notifications are always delivered.
+     */
+    public function notification_enabled($user_id, $type)
+    {
+        if($type==='security') return TRUE; // security alerts can't be disabled
+        $map=array(
+            'transfer'=>'notify_transfers','deposit'=>'notify_transfers',
+            'ticket'=>'notify_tickets','loan'=>'notify_loans','card'=>'notify_cards',
+            'general'=>'notify_general',
+        );
+        $key=$map[$type] ?? NULL;
+        if(!$key) return TRUE;
+        $prefs=$this->preferences($user_id);
+        // Default ON unless explicitly disabled.
+        return ($prefs[$key] ?? '1') !== '0';
+    }
+
+    /**
+     * Create a notification — but only if the user's preferences allow that
+     * type. Security notifications are always stored.
+     */
+    public function OLDNAME
+    {
+        if(!$this->notification_enabled($user_id, $type)) return FALSE;
+        return $this->add_notification($user_id, $type, $title, $body, $link);
     }
 
     public function login_attempts($key, $window_seconds=900, $max=5)
@@ -815,7 +1083,79 @@ class Bank_model extends CI_Model
     {
         $rate=round((float)$rate,10);
         if($rate<=0)return FALSE;
-        return $this->db->replace('exchange_rates',array('from_currency'=>$from,'to_currency'=>$to,'rate'=>$rate,'updated_at'=>date('Y-m-d H:i:s')));
+        $ok=$this->db->replace('exchange_rates',array('from_currency'=>$from,'to_currency'=>$to,'rate'=>$rate,'updated_at'=>date('Y-m-d H:i:s')));
+        // Record a daily historical snapshot for the rate chart.
+        if($ok)$this->record_rate_history($from,$to,$rate);
+        return $ok;
+    }
+
+    /**
+     * Insert/update today's historical snapshot for a currency pair.
+     */
+    public function record_rate_history($from,$to,$rate)
+    {
+        $rate=round((float)$rate,10);
+        if($rate<=0)return FALSE;
+        $today=date('Y-m-d');
+        $existing=$this->db->where(array('from_currency'=>$from,'to_currency'=>$to,'snapshot_date'=>$today))->get('exchange_rate_history')->row_array();
+        if($existing){
+            return $this->db->where('id',$existing['id'])->update('exchange_rate_history',array('rate'=>$rate));
+        }
+        return $this->db->insert('exchange_rate_history',array(
+            'from_currency'=>$from,'to_currency'=>$to,'rate'=>$rate,
+            'snapshot_date'=>$today,'created_at'=>date('Y-m-d H:i:s')
+        ));
+    }
+
+    /**
+     * Daily rate history for a pair over the last $days days, oldest-first.
+     * Backfills any missing days (including today) from the current rate so the
+     * chart always renders a continuous line.
+     */
+    public function exchange_rate_history($from,$to,$days=30)
+    {
+        $days=(int)$days; if($days<2)$days=30;
+        $since=date('Y-m-d',strtotime('-'.($days-1).' days'));
+        $rows=$this->db->where(array('from_currency'=>$from,'to_currency'=>$to))
+            ->where('snapshot_date >=',$since)
+            ->order_by('snapshot_date','ASC')
+            ->get('exchange_rate_history')->result_array();
+        $by_date=array();
+        foreach($rows as $r)$by_date[$r['snapshot_date']]=(float)$r['rate'];
+
+        // Determine a seed rate: prefer the most recent historical value, else
+        // fall back to the live exchange_rates table, else inverse pair.
+        $seed=NULL;
+        if(!empty($by_date)){$seed=end($by_date);reset($by_date);}
+        else{$seed=$this->exchange_rate($from,$to);}
+        if($seed===NULL)$seed=1.0;
+
+        $out=array();
+        for($i=$days-1;$i>=0;$i--){
+            $d=date('Y-m-d',strtotime("-{$i} days"));
+            if(isset($by_date[$d])){
+                $seed=(float)$by_date[$d];
+            }else{
+                // Persist the seed for this missing day so future requests find it.
+                $this->record_rate_history($from,$to,$seed);
+            }
+            $out[]=array('date'=>$d,'rate'=>$seed);
+        }
+        return $out;
+    }
+
+    /**
+     * Snapshot every live currency pair once per day. Called by the scheduler.
+     * Returns how many pairs were recorded.
+     */
+    public function snapshot_exchange_rates()
+    {
+        $rates=$this->exchange_rates();
+        $n=0;
+        foreach($rates as $r){
+            if($this->record_rate_history($r['from_currency'],$r['to_currency'],$r['rate']))$n++;
+        }
+        return $n;
     }
 
     public function exchange_convert($user_id,$from_account_id,$to_account_id,$amount)
@@ -839,6 +1179,377 @@ class Bank_model extends CI_Model
         $this->db->insert('transactions',array('account_id'=>$to['id'],'reference'=>$ref.'-C','type'=>'credit','category'=>'Currency exchange','description'=>'Exchanged from '.$from['currency'],'amount'=>$converted,'currency'=>$to['currency'],'balance_after'=>(float)$to['available_balance']+$converted,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
         $this->db->trans_complete();
         return $this->db->trans_status()?array(TRUE,array('reference'=>$ref,'rate'=>$rate,'converted'=>$converted,'from_currency'=>$from['currency'],'to_currency'=>$to['currency'])):array(FALSE,'The exchange could not be completed.');
+    }
+
+    /* -------------------- Mobile Check Deposits -------------------- */
+
+    public function check_deposits_for_user($user_id, $limit = 50)
+    {
+        return $this->db->select('cd.*, a.account_number, a.name account_name')
+            ->from('check_deposits cd')
+            ->join('accounts a', 'a.id = cd.account_id')
+            ->where('cd.user_id', (int)$user_id)
+            ->order_by('cd.created_at', 'DESC')
+            ->limit((int)$limit)
+            ->get()->result_array();
+    }
+
+    public function check_deposit($id, $user_id = NULL)
+    {
+        $this->db->select('cd.*, a.account_number, a.name account_name, a.currency')
+            ->from('check_deposits cd')
+            ->join('accounts a', 'a.id = cd.account_id')
+            ->where('cd.id', (int)$id);
+        if ($user_id !== NULL) $this->db->where('cd.user_id', (int)$user_id);
+        return $this->db->get()->row_array();
+    }
+
+    public function all_check_deposits($status = NULL, $limit = 100, $offset = 0)
+    {
+        $this->db->select('cd.*, u.first_name, u.last_name, u.email, a.account_number, a.name account_name')
+            ->from('check_deposits cd')
+            ->join('users u', 'u.id = cd.user_id')
+            ->join('accounts a', 'a.id = cd.account_id');
+        if ($status) $this->db->where('cd.status', $status);
+        return $this->db->order_by('cd.created_at', 'DESC')
+            ->limit((int)$limit, (int)$offset)
+            ->get()->result_array();
+    }
+
+    public function count_check_deposits($status = NULL)
+    {
+        if ($status) $this->db->where('status', $status);
+        return (int) $this->db->count_all_results('check_deposits');
+    }
+
+    public function create_check_deposit($user_id, $account_id, $amount, $front_path, $back_path, $check_number = NULL)
+    {
+        $account = $this->account((int)$account_id, (int)$user_id);
+        if (!$account || $account['status'] !== 'active') return array(FALSE, 'The selected account is unavailable.');
+        $amount = round((float)$amount, 2);
+        if ($amount <= 0) return array(FALSE, 'Enter a valid deposit amount.');
+        $daily_limit = 25000;
+        $today_start = date('Y-m-d 00:00:00');
+        $today_total = (float) $this->db->select_sum('amount', 'total')
+            ->where('user_id', (int)$user_id)->where('created_at >=', $today_start)
+            ->get('check_deposits')->row()->total;
+        if ($today_total + $amount > $daily_limit) {
+            return array(FALSE, 'This deposit would exceed your daily mobile deposit limit of '.money($daily_limit, $account['currency']).'.');
+        }
+        $reference = 'MCD-'.date('ymd').'-'.random_int(100000, 999999);
+        $now = date('Y-m-d H:i:s');
+        $this->db->insert('check_deposits', array(
+            'user_id' => (int)$user_id, 'account_id' => (int)$account_id, 'reference' => $reference,
+            'amount' => $amount, 'check_number' => $check_number ?: NULL,
+            'front_image_path' => $front_path, 'back_image_path' => $back_path,
+            'status' => 'pending', 'created_at' => $now, 'updated_at' => $now,
+        ));
+        $id = $this->db->insert_id();
+        try { $this->notify_user((int)$user_id, 'deposit', 'Check deposit submitted', 'Your deposit of '.money($amount, $account['currency']).' ('.$reference.') is pending review.', 'deposits'); } catch (Exception $e) {}
+        return array(TRUE, $reference);
+    }
+
+    public function review_check_deposit($id, $approve, $note = NULL)
+    {
+        $deposit = $this->check_deposit($id);
+        if (!$deposit) return array(FALSE, 'Deposit not found.');
+        if ($deposit['status'] !== 'pending') return array(FALSE, 'This deposit has already been reviewed.');
+
+        $status = $approve ? 'approved' : 'rejected';
+        $this->db->trans_start();
+        $transaction_id = NULL;
+        if ($approve) {
+            $account = $this->account((int)$deposit['account_id'], (int)$deposit['user_id']);
+            if (!$account || $account['status'] !== 'active') {
+                $this->db->trans_complete();
+                return array(FALSE, 'The destination account is no longer active.');
+            }
+            $reference = $deposit['reference'];
+            $now = date('Y-m-d H:i:s');
+            $this->db->where('id', $account['id'])
+                ->set('balance', 'balance+'.$deposit['amount'], FALSE)
+                ->set('available_balance', 'available_balance+'.$deposit['amount'], FALSE)
+                ->update('accounts');
+            $this->db->insert('transactions', array(
+                'account_id' => $account['id'], 'reference' => $reference,
+                'type' => 'credit', 'category' => 'Check deposit',
+                'description' => 'Mobile check deposit'.($deposit['check_number'] ? ' #'.$deposit['check_number'] : ''),
+                'amount' => $deposit['amount'], 'currency' => $account['currency'],
+                'balance_after' => (float)$account['available_balance'] + (float)$deposit['amount'],
+                'status' => 'completed', 'transaction_date' => date('Y-m-d'), 'created_at' => $now,
+            ));
+            $transaction_id = $this->db->insert_id();
+        }
+        $this->db->where('id', $deposit['id'])->update('check_deposits', array(
+            'status' => $status, 'review_note' => $note,
+            'transaction_id' => $transaction_id, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        $this->db->trans_complete();
+        if (!$this->db->trans_status()) return array(FALSE, 'Unable to process this review.');
+
+        $msg = $approve
+            ? 'Check deposit '.$deposit['reference'].' approved and credited to your account.'
+            : 'Check deposit '.$deposit['reference'].' was rejected. '.(string)$note;
+        try { $this->notify_user((int)$deposit['user_id'], 'deposit', $approve ? 'Deposit approved' : 'Deposit rejected', $msg, 'deposits'); } catch (Exception $e) {}
+        return array(TRUE, $status);
+    }
+
+<<<<<<< HEAD
+=======
+    /* -------------------- KYC documents -------------------- */
+
+    public function kyc_documents($user_id)
+    {
+        return $this->db->where('user_id', (int)$user_id)
+            ->order_by('created_at', 'DESC')->get('kyc_documents')->result_array();
+    }
+
+    public function kyc_document($id, $user_id = NULL)
+    {
+        $this->db->where('id', (int)$id);
+        if ($user_id !== NULL) $this->db->where('user_id', (int)$user_id);
+        return $this->db->get('kyc_documents')->row_array();
+    }
+
+    public function all_kyc_documents($status = NULL, $limit = 100, $offset = 0)
+    {
+        $this->db->select('kd.*, u.first_name, u.last_name, u.email')
+            ->from('kyc_documents kd')->join('users u', 'u.id = kd.user_id');
+        if ($status) $this->db->where('kd.status', $status);
+        return $this->db->order_by('kd.created_at', 'DESC')
+            ->limit((int)$limit, (int)$offset)->get()->result_array();
+    }
+
+    public function count_kyc_documents($status = NULL)
+    {
+        if ($status) $this->db->where('status', $status);
+        return (int) $this->db->count_all_results('kyc_documents');
+    }
+
+    public function add_kyc_document($user_id, $data)
+    {
+        $allowed = array('passport','drivers_license','national_id','proof_of_address','selfie','other');
+        $type = in_array($data['doc_type'], $allowed, TRUE) ? $data['doc_type'] : 'other';
+        $now = date('Y-m-d H:i:s');
+        $this->db->insert('kyc_documents', array(
+            'user_id' => (int)$user_id,
+            'doc_type' => $type,
+            'file_path' => $data['file_path'],
+            'original_name' => $data['original_name'] ?? NULL,
+            'mime_type' => $data['mime_type'] ?? NULL,
+            'file_size' => isset($data['file_size']) ? (int)$data['file_size'] : NULL,
+            'status' => 'pending',
+            'created_at' => $now,
+        ));
+        $id = $this->db->insert_id();
+        // Flip the customer's profile back to pending when new docs arrive.
+        $this->db->where('user_id', (int)$user_id)->update('customer_profiles', array('kyc_status' => 'pending', 'updated_at' => $now));
+        return $id;
+    }
+
+    public function delete_kyc_document($id, $user_id)
+    {
+        $doc = $this->kyc_document($id, $user_id);
+        if (!$doc) return FALSE;
+        if ($doc['status'] !== 'pending') return FALSE; // can't remove reviewed docs
+        $this->db->where(array('id' => $id, 'user_id' => (int)$user_id))->delete('kyc_documents');
+        return $doc;
+    }
+
+    public function review_kyc_document($id, $approve, $note, $reviewer_id)
+    {
+        $doc = $this->kyc_document($id);
+        if (!$doc) return array(FALSE, 'Document not found.');
+        if ($doc['status'] !== 'pending') return array(FALSE, 'This document has already been reviewed.');
+        $status = $approve ? 'approved' : 'rejected';
+        $this->db->where('id', $id)->update('kyc_documents', array(
+            'status' => $status, 'review_note' => $note,
+            'reviewed_by' => (int)$reviewer_id, 'reviewed_at' => date('Y-m-d H:i:s'),
+        ));
+        // If approved and no other pending/rejected required docs, verify the customer.
+        if ($approve) {
+            $remaining = $this->db->where('user_id', $doc['user_id'])
+                ->where_in('status', array('pending','rejected'))->count_all_results('kyc_documents');
+            if ($remaining == 0) {
+                $this->update_kyc_status($doc['user_id'], 'verified');
+            }
+            $msg = 'Your identity document was approved'.($remaining == 0 ? ' and your identity is now verified.' : '.');
+        } else {
+            $this->update_kyc_status($doc['user_id'], 'rejected');
+            $msg = 'One of your identity documents was rejected'.($note ? ': '.$note : '.').' Please upload a replacement.';
+        }
+        try { $this->add_notification((int)$doc['user_id'], 'security',
+            $approve ? 'ID approved' : 'Action needed on your ID',
+            $msg, 'settings'); } catch (Exception $e) {}
+        return array(TRUE, $status);
+    }
+
+    public function kyc_document_counts_by_status()
+    {
+        $rows = $this->db->select('status, COUNT(*) c')->group_by('status')->get('kyc_documents')->result_array();
+        $out = array('pending' => 0, 'approved' => 0, 'rejected' => 0);
+        foreach ($rows as $r) $out[$r['status']] = (int)$r['c'];
+        return $out;
+    }
+
+>>>>>>> 8cd6fd1 (Complete KYC document upload with admin review)
+    /* -------------------- Savings Goals -------------------- */
+
+    public function goals($user_id)
+    {
+        return $this->db->where('user_id', (int)$user_id)
+            ->where('status !=', 'archived')
+            ->order_by('status', 'ASC')
+            ->order_by('created_at', 'DESC')
+            ->get('savings_goals')->result_array();
+    }
+
+    public function goal($goal_id, $user_id)
+    {
+        return $this->db->where(array('id' => (int)$goal_id, 'user_id' => (int)$user_id))
+            ->get('savings_goals')->row_array();
+    }
+
+    public function create_goal($user_id, $data)
+    {
+        $now = date('Y-m-d H:i:s');
+        $row = array(
+            'user_id'       => (int)$user_id,
+            'name'          => substr(trim((string)$data['name']), 0, 120),
+            'target_amount' => round((float)$data['target_amount'], 2),
+            'saved_amount'  => 0,
+            'target_date'   => !empty($data['target_date']) ? $data['target_date'] : NULL,
+            'icon'          => substr((string)($data['icon'] ?? '🎯'), 0, 16),
+            'color'         => substr((string)($data['color'] ?? '#1468e5'), 0, 20),
+            'status'        => 'active',
+            'created_at'    => $now,
+            'updated_at'    => $now,
+        );
+        $this->db->insert('savings_goals', $row);
+        return $this->db->insert_id();
+    }
+
+    public function contribute_goal($goal_id, $user_id, $amount)
+    {
+        $amount = round((float)$amount, 2);
+        if ($amount <= 0) return array(FALSE, 'Enter an amount greater than zero.');
+        $goal = $this->goal($goal_id, $user_id);
+        if (!$goal) return array(FALSE, 'Goal not found.');
+        $new_amount = round((float)$goal['saved_amount'] + $amount, 2);
+        $status = $new_amount >= (float)$goal['target_amount'] ? 'completed' : 'active';
+        $this->db->where('id', $goal['id'])->update('savings_goals', array(
+            'saved_amount' => $new_amount, 'status' => $status, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        return array(TRUE, array('saved' => $new_amount, 'status' => $status, 'completed' => $status === 'completed'));
+    }
+
+    public function withdraw_goal($goal_id, $user_id, $amount)
+    {
+        $amount = round((float)$amount, 2);
+        if ($amount <= 0) return array(FALSE, 'Enter an amount greater than zero.');
+        $goal = $this->goal($goal_id, $user_id);
+        if (!$goal) return array(FALSE, 'Goal not found.');
+        if ($amount > (float)$goal['saved_amount']) return array(FALSE, 'You cannot withdraw more than you have saved.');
+        $new_amount = round((float)$goal['saved_amount'] - $amount, 2);
+        $this->db->where('id', $goal['id'])->update('savings_goals', array(
+            'saved_amount' => $new_amount, 'status' => 'active', 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        return array(TRUE, array('saved' => $new_amount));
+    }
+
+    public function delete_goal($goal_id, $user_id)
+    {
+        return $this->db->where(array('id' => (int)$goal_id, 'user_id' => (int)$user_id))->delete('savings_goals');
+    }
+
+    /* -------------------- Budget insights -------------------- */
+
+    /**
+     * Monthly spending grouped by category for the last N months.
+     * Returns [ ['month'=>'YYYY-MM', 'category'=>..., 'total'=>float], ... ]
+     */
+    public function monthly_spending_by_category($user_id, $months = 6)
+    {
+        $since = date('Y-m-01', strtotime('-' . ((int)$months - 1) . ' months'));
+        $rows = $this->db->select("DATE_FORMAT(t.created_at,'%Y-%m') AS month, t.category, SUM(t.amount) AS total")
+            ->from('transactions t')->join('accounts a', 'a.id=t.account_id')
+            ->where('a.user_id', (int)$user_id)
+            ->where('t.type', 'debit')->where('t.status', 'completed')
+            ->where('t.created_at >=', $since . ' 00:00:00')
+            ->group_by('month, t.category')
+            ->order_by('month', 'ASC')->order_by('total', 'DESC')
+            ->get()->result_array();
+        return $rows;
+    }
+
+    /** Income vs expense totals for each of the last N months. */
+    public function monthly_income_expense($user_id, $months = 6)
+    {
+        $since = date('Y-m-01', strtotime('-' . ((int)$months - 1) . ' months'));
+        $rows = $this->db->select("DATE_FORMAT(t.created_at,'%Y-%m') AS month, t.type, SUM(t.amount) AS total")
+            ->from('transactions t')->join('accounts a', 'a.id=t.account_id')
+            ->where('a.user_id', (int)$user_id)->where('t.status', 'completed')
+            ->where('t.created_at >=', $since . ' 00:00:00')
+            ->group_by('month, t.type')
+            ->order_by('month', 'ASC')
+            ->get()->result_array();
+        $out = array();
+        foreach ($rows as $r) {
+            $m = $r['month'];
+            if (!isset($out[$m])) $out[$m] = array('income' => 0.0, 'expenses' => 0.0);
+            $out[$m][$r['type'] === 'credit' ? 'income' : 'expenses'] = (float)$r['total'];
+        }
+        return $out;
+    }
+
+    /* -------------------- Statements -------------------- */
+
+    /**
+     * Transactions for one account over a month, ordered oldest→newest so
+     * the running balance reads chronologically.
+     */
+    public function statement_transactions($account_id, $year, $month)
+    {
+        $start = sprintf('%04d-%02d-01 00:00:00', (int)$year, (int)$month);
+        $end = date('Y-m-t 23:59:59', strtotime($start));
+        return $this->db->where('account_id', (int)$account_id)
+            ->where('created_at >=', $start)->where('created_at <=', $end)
+            ->where('status', 'completed')
+            ->order_by('created_at', 'ASC')->order_by('id', 'ASC')
+            ->get('transactions')->result_array();
+    }
+
+    /**
+     * Opening balance for an account at the start of a month: the current
+     * balance minus every completed credit/debit delta from the month onward.
+     */
+    public function opening_balance($account_id, $year, $month)
+    {
+        $account = $this->db->select('balance')->where('id', (int)$account_id)->get('accounts')->row_array();
+        if (!$account) return 0.0;
+        $current = (float)$account['balance'];
+        $cutoff = sprintf('%04d-%02d-01 00:00:00', (int)$year, (int)$month);
+        return round($current - $this->posted_delta($account_id, $cutoff), 2);
+    }
+
+    /** Sum of credit/debit deltas posted at/after a given timestamp. */
+    private function posted_delta($account_id, $since)
+    {
+        $row = $this->db->select_sum('CASE WHEN type="credit" THEN amount ELSE -amount END', 'delta')
+            ->where('account_id', (int)$account_id)->where('created_at >=', $since)
+            ->where('status', 'completed')
+            ->get('transactions')->row();
+        return (float)($row->delta ?? 0);
+    }
+
+    /** List of months (YYYY-MM) that have transactions for any of the user's accounts, newest first. */
+    public function statement_months($user_id)
+    {
+        $rows = $this->db->select("DISTINCT DATE_FORMAT(t.created_at,'%Y-%m') AS ym", FALSE)
+            ->from('transactions t')->join('accounts a', 'a.id=t.account_id')
+            ->where('a.user_id', (int)$user_id)
+            ->order_by('ym', 'DESC')->limit(36)->get()->result_array();
+        return array_column($rows, 'ym');
     }
 
     public function save_settings($values)

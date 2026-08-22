@@ -113,6 +113,14 @@ CREATE TABLE IF NOT EXISTS exchange_rates (
  updated_at DATETIME NOT NULL, UNIQUE KEY uq_pair(from_currency,to_currency)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Daily snapshot history for exchange-rate charts (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS exchange_rate_history (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, from_currency CHAR(3) NOT NULL, to_currency CHAR(3) NOT NULL,
+ rate DECIMAL(20,10) NOT NULL, snapshot_date DATE NOT NULL, created_at DATETIME NOT NULL,
+ UNIQUE KEY uq_hist_pair_date(from_currency,to_currency,snapshot_date),
+ INDEX idx_hist_pair(from_currency,to_currency,snapshot_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS password_resets (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at DATETIME NOT NULL, used TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
  INDEX idx_reset_user(user_id), INDEX idx_reset_token(token), CONSTRAINT fk_reset_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -138,6 +146,40 @@ CREATE TABLE IF NOT EXISTS lookup_values (
 CREATE TABLE IF NOT EXISTS notification_templates (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, template_key VARCHAR(100) NOT NULL UNIQUE, channel ENUM('email','sms','system') NOT NULL, subject VARCHAR(190), body TEXT NOT NULL, is_active TINYINT(1) NOT NULL DEFAULT 1, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Customer savings goals (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS savings_goals (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL,
+ name VARCHAR(120) NOT NULL, target_amount DECIMAL(18,2) NOT NULL, saved_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
+ target_date DATE NULL, icon VARCHAR(16) NULL, color VARCHAR(20) NULL,
+ status ENUM('active','completed','archived') NOT NULL DEFAULT 'active', created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
+ INDEX idx_savings_goals_user(user_id), CONSTRAINT fk_savings_goal_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Mobile check deposits (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS check_deposits (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, account_id BIGINT UNSIGNED NOT NULL,
+ reference VARCHAR(40) NOT NULL UNIQUE, amount DECIMAL(18,2) NOT NULL, check_number VARCHAR(40) NULL,
+ front_image_path VARCHAR(255) NOT NULL, back_image_path VARCHAR(255) NOT NULL,
+ status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+ review_note VARCHAR(255) NULL, transaction_id BIGINT UNSIGNED NULL,
+ created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
+ INDEX idx_check_deposits_user(user_id), INDEX idx_check_deposits_status(status),
+ CONSTRAINT fk_check_deposit_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+ CONSTRAINT fk_check_deposit_account FOREIGN KEY(account_id) REFERENCES accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- KYC identity documents (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS kyc_documents (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL,
+ doc_type ENUM('passport','drivers_license','national_id','proof_of_address','selfie','other') NOT NULL,
+ file_path VARCHAR(255) NOT NULL, original_name VARCHAR(255) NULL, mime_type VARCHAR(80) NULL, file_size INT UNSIGNED NULL,
+ status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending', review_note VARCHAR(255) NULL,
+ reviewed_by BIGINT UNSIGNED NULL, reviewed_at DATETIME NULL, created_at DATETIME NOT NULL,
+ INDEX idx_kyc_user(user_id), INDEX idx_kyc_status(status),
+ CONSTRAINT fk_kyc_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET NAMES utf8mb4;
 
 -- Add recipient_routing column to transfers if missing (safe for existing installs).
@@ -148,6 +190,11 @@ PREPARE stmt2 FROM @ddl2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
 -- Add twofa_enabled column to users if missing (safe for existing installs).
 SET @has_twofa := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='users' AND column_name='twofa_enabled');
 SET @ddl := IF(@has_twofa = 0, 'ALTER TABLE users ADD COLUMN twofa_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER status', 'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- TOTP authenticator-app 2FA (new in 2026.08 release)
+SET @has_totp := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='users' AND column_name='totp_secret');
+SET @ddl := IF(@has_totp = 0, 'ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64) NULL AFTER twofa_enabled, ADD COLUMN totp_confirmed TINYINT(1) NOT NULL DEFAULT 0 AFTER totp_secret, ADD COLUMN backup_codes_hash VARCHAR(255) NULL AFTER totp_confirmed', 'SELECT 1');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 INSERT INTO users (id,username,email,password_hash,first_name,last_name,role,status,created_at,updated_at) VALUES

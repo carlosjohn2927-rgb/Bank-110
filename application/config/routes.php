@@ -1,21 +1,48 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
-$route['default_controller'] = 'auth/login';
+$route['default_controller'] = 'home/index';
 $route['404_override'] = '';
 $route['translate_uri_dashes'] = FALSE;
 
+// Public marketing homepage.
+$route['home'] = 'home/index';
+
+// Public content pages (about, security, fees, branches, help, contact, privacy, terms).
+$route['about']    = 'pages/view/about';
+$route['security-center'] = 'pages/view/security';
+$route['fees']     = 'pages/view/fees';
+$route['branches'] = 'pages/view/branches';
+$route['help']     = 'pages/help';
+$route['help/search'] = 'pages/help_search';
+$route['help/(:any)'] = 'pages/article/$1';
+$route['contact']  = 'pages/view/contact';
+$route['privacy']  = 'pages/view/privacy';
+$route['terms']    = 'pages/view/terms';
+$route['p/(:any)'] = 'pages/view/$1';
+$route['products'] = 'pages/products';
+$route['personal'] = 'pages/products';
+$route['loans-public'] = 'pages/loans';
+$route['borrow']   = 'pages/loans';
+$route['cards-public'] = 'pages/cards';
+$route['calculator'] = 'pages/calculator';
+
+// Administrator sign-in (formerly the customer login at /login).
 $route['login'] = 'auth/login';
-$route['register'] = 'register/index';
-$route['forgot'] = 'auth/forgot';
-$route['reset/(:any)'] = 'auth/reset/$1';
+$route['admin'] = 'auth/login';
+$route['admin/login'] = 'auth/login';
+$route['admin/logout'] = 'auth/logout';
+
+// Customer sign-in.
+$route['user/login'] = 'auth/user_login';
+$route['signin'] = 'auth/user_login';
 $route['verify'] = 'auth/verify';
-$route['twofa'] = 'auth/twofa';
-$route['twofa/resend'] = 'auth/resend_twofa';
 $route['auth/customer_login'] = 'auth/customer_login';
 $route['logout'] = 'auth/logout';
-$route['admin'] = 'auth/admin';
-$route['admin/login'] = 'auth/admin';
-$route['admin/logout'] = 'auth/logout';
+$route['twofa'] = 'auth/twofa';
+$route['twofa/resend'] = 'auth/resend_twofa';
+$route['forgot'] = 'auth/forgot';
+$route['reset/(:any)'] = 'auth/reset/$1';
+$route['register'] = 'register/index';
 $route['dashboard'] = 'dashboard/index';
 $route['accounts'] = 'accounts/index';
 $route['accounts/create'] = 'accounts/create';
@@ -24,15 +51,37 @@ $route['accounts/(:num)/status'] = 'accounts/status/$1';
 $route['transactions'] = 'transactions/index';
 $route['transactions/statement'] = 'transactions/statement';
 $route['transactions/(:num)'] = 'transactions/view/$1';
+
+// Monthly PDF statements
+$route['statements'] = 'statements/index';
+$route['statements/(:num)/(:num)/(:num)'] = 'statements/download/$1/$2/$3';
 $route['transfer'] = 'transfers/create';
 $route['transfers'] = 'transfers/index';
 $route['transfers/(:num)/cancel'] = 'transfers/cancel/$1';
 $route['bills'] = 'bills/index';
 $route['bills/pay'] = 'bills/pay';
+
+// Mobile check deposit
+$route['deposits'] = 'deposits/index';
+$route['deposits/create'] = 'deposits/create';
+$route['deposits/(:num)'] = 'deposits/view/$1';
+
+// Savings goals
+$route['goals'] = 'goals/index';
+$route['goals/create'] = 'goals/create';
+$route['goals/(:num)/contribute'] = 'goals/contribute/$1';
+$route['goals/(:num)/withdraw'] = 'goals/withdraw/$1';
+$route['goals/(:num)/delete'] = 'goals/delete/$1';
+
+// Budget insights
+$route['budget'] = 'budget/index';
+$route['budget/save-limit'] = 'budget/save_limit';
 $route['beneficiaries'] = 'transfers/beneficiaries';
 $route['beneficiaries/(:num)/update'] = 'transfers/beneficiary_update/$1';
 $route['beneficiaries/(:num)/delete'] = 'transfers/beneficiary_delete/$1';
 $route['exchange'] = 'exchange/index';
+$route['exchange/history'] = 'exchange/history';
+$route['exchange/convert'] = 'exchange/convert';
 $route['cards'] = 'cards/index';
 $route['cards/create'] = 'cards/create';
 $route['cards/(:num)/toggle'] = 'cards/toggle/$1';
@@ -45,9 +94,16 @@ $route['support/create'] = 'support/create';
 $route['support/(:num)'] = 'support/view/$1';
 $route['settings'] = 'profile/index';
 $route['notifications'] = 'notifications/index';
+$route['notifications/read/(:num)'] = 'notifications/read/$1';
+$route['notifications/mark-all'] = 'notifications/mark_all';
+$route['notifications/delete/(:num)'] = 'notifications/delete/$1';
+$route['notifications/clear'] = 'notifications/delete_all';
 $route['settings/preferences'] = 'profile/preferences';
 $route['settings/password'] = 'profile/password';
 $route['settings/twofa'] = 'profile/twofa';
+$route['settings/twofa/setup'] = 'profile/totp_setup';
+$route['settings/twofa/confirm'] = 'profile/totp_confirm';
+$route['settings/twofa/disable'] = 'profile/totp_disable';
 $route['settings/kyc'] = 'profile/kyc';
 $route['chat'] = 'chat/index';
 $route['language/set'] = 'language/set';
@@ -55,6 +111,7 @@ $route['scheduler/run'] = 'scheduler/run';
 $route['setup/check'] = 'setup/check';
 
 $route['admin/dashboard'] = 'admin/dashboard';
+$route['admin/dashboard/data'] = 'admin/dashboard_data';
 $route['admin/customers'] = 'admin/customers';
 $route['admin/customers/create'] = 'admin/customer_create';
 $route['admin/customers/export'] = 'admin/export_customers';
@@ -70,6 +127,19 @@ $route['admin/transactions/(:num)'] = 'admin/transaction/$1';
 $route['admin/transactions/(:num)/status'] = 'admin/transaction_status/$1';
 $route['admin/transfers'] = 'admin/transfers';
 $route['admin/deposits'] = 'admin/deposits';
+$route['admin/check-deposits'] = 'admin/check_deposits';
+$route['admin/check-deposits/(:num)/review'] = 'admin/check_deposit_review/$1';
+$route['admin/check-deposits/(:num)'] = 'admin/check_deposit/$1';
+<<<<<<< HEAD
+=======
+$route['kyc'] = 'kyc/index';
+$route['kyc/upload'] = 'kyc/upload';
+$route['kyc/delete/(:num)'] = 'kyc/delete/$1';
+$route['kyc/download/(:num)'] = 'kyc/download/$1';
+$route['admin/kyc-documents'] = 'admin/kyc_documents';
+$route['admin/kyc-documents/(:num)/review'] = 'admin/kyc_review/$1';
+$route['admin/kyc-documents/(:num)'] = 'admin/kyc_document/$1';
+>>>>>>> 8cd6fd1 (Complete KYC document upload with admin review)
 $route['admin/loans'] = 'admin/loans';
 $route['admin/cards'] = 'admin/cards';
 $route['admin/tickets'] = 'admin/tickets';
