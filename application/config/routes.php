@@ -111,6 +111,7 @@ $route['scheduler/run'] = 'scheduler/run';
 $route['setup/check'] = 'setup/check';
 
 $route['admin/dashboard'] = 'admin/dashboard';
+$route['admin/dashboard/data'] = 'admin/dashboard_data';
 $route['admin/customers'] = 'admin/customers';
 $route['admin/customers/create'] = 'admin/customer_create';
 $route['admin/customers/export'] = 'admin/export_customers';

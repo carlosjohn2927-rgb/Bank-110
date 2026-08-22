@@ -344,6 +344,78 @@ class Bank_model extends CI_Model
         return array('checking'=>$pct('checking'),'savings'=>$pct('savings'),'investment'=>$pct('investment'),'total'=>array_sum($out));
     }
 
+    /* -------------------- Admin analytics -------------------- */
+
+    /**
+     * Daily transaction volume + total value for a date range, oldest→newest.
+     * Returns labels (short dates), counts and amounts.
+     */
+    public function transaction_volume_range($days = 30)
+    {
+        $days = (int) $days;
+        $out = array('labels' => array(), 'counts' => array(), 'amounts' => array());
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-{$i} days"));
+            $row = $this->db
+                ->select('COUNT(*) c, COALESCE(SUM(amount),0) total')
+                ->where('DATE(created_at)', $day)
+                ->get('transactions')->row();
+            $out['labels'][]  = date($days > 14 ? 'M j' : 'D', strtotime($day));
+            $out['counts'][]  = (int) ($row->c ?? 0);
+            $out['amounts'][] = round((float)($row->total ?? 0), 2);
+        }
+        return $out;
+    }
+
+    /** New-customer signups per day over a range. */
+    public function signups_range($days = 30)
+    {
+        $days = (int) $days;
+        $out = array('labels' => array(), 'counts' => array());
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-{$i} days"));
+            $c = $this->db->where('role', 'customer')->where('DATE(created_at)', $day)->count_all_results('users');
+            $out['labels'][] = date($days > 14 ? 'M j' : 'D', strtotime($day));
+            $out['counts'][] = (int) $c;
+        }
+        return $out;
+    }
+
+    /** Deposit/withdrawal breakdown by category over a range (debits by category). */
+    public function spending_by_category_range($days = 30)
+    {
+        $days = (int) $days;
+        $since = date('Y-m-d 00:00:00', strtotime('-'.($days - 1).' days'));
+        $rows = $this->db
+            ->select('category, COUNT(*) c, COALESCE(SUM(amount),0) total')
+            ->where('type', 'debit')->where('status', 'completed')
+            ->where('created_at >=', $since)
+            ->group_by('category')->order_by('total', 'DESC')
+            ->limit(8)->get('transactions')->result_array();
+        return $rows;
+    }
+
+    /** Aggregate KPIs over a date range. */
+    public function admin_kpis_range($days = 30)
+    {
+        $days = (int) $days;
+        $since = date('Y-m-d 00:00:00', strtotime('-'.($days - 1).' days'));
+        $tx = $this->db
+            ->select('COUNT(*) c, COALESCE(SUM(amount),0) total')
+            ->where('status', 'completed')->where('created_at >=', $since)
+            ->get('transactions')->row();
+        $newCustomers = $this->db->where('role', 'customer')->where('created_at >=', $since)->count_all_results('users');
+        $newAccounts = $this->db->where('created_at >=', $since)->count_all_results('accounts');
+        return array(
+            'transactions'  => (int) ($tx->c ?? 0),
+            'volume'        => round((float)($tx->total ?? 0), 2),
+            'new_customers' => (int) $newCustomers,
+            'new_accounts'  => (int) $newAccounts,
+            'days'          => $days,
+        );
+    }
+
+
     public function admin_metrics()
     {
         $metrics = array();

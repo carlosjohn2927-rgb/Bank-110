@@ -3,7 +3,37 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Admin extends MY_Controller {
  public function __construct(){parent::__construct();$this->require_admin();}
  private function page($view,$data=array()){$this->render('admin/'.$view,$data,'layouts/admin');}
- public function dashboard(){$this->page('dashboard',array('title'=>'Operations overview','metrics'=>$this->Bank_model->admin_metrics(),'volume'=>$this->Bank_model->transaction_volume_7d(),'distribution'=>$this->Bank_model->account_distribution(),'customers'=>$this->Bank_model->customers(5),'transactions'=>$this->Bank_model->all_transactions(NULL,6)));}
+ public function dashboard(){
+  $range=$this->dashboard_range();
+  $this->page('dashboard',array(
+   'title'=>'Operations overview',
+   'metrics'=>$this->Bank_model->admin_metrics(),
+   'range'=>$range,
+   'kpis'=>$this->Bank_model->admin_kpis_range($range),
+   'volume'=>$this->Bank_model->transaction_volume_range($range),
+   'signups'=>$this->Bank_model->signups_range($range),
+   'categories'=>$this->Bank_model->spending_by_category_range($range),
+   'distribution'=>$this->Bank_model->account_distribution(),
+   'customers'=>$this->Bank_model->customers(5),
+   'transactions'=>$this->Bank_model->all_transactions(NULL,6),
+  ));
+ }
+ /** AJAX analytics endpoint for the dashboard range selector. */
+ public function dashboard_data(){
+  $range=$this->dashboard_range();
+  return $this->json(array(
+   'ok'=>TRUE,'range'=>$range,
+   'kpis'=>$this->Bank_model->admin_kpis_range($range),
+   'volume'=>$this->Bank_model->transaction_volume_range($range),
+   'signups'=>$this->Bank_model->signups_range($range),
+   'categories'=>$this->Bank_model->spending_by_category_range($range),
+  ));
+ }
+ private function dashboard_range(){
+  $allowed=array(7,30,90);
+  $d=(int)$this->input->get('range',TRUE);
+  return in_array($d,$allowed,TRUE)?$d:7;
+ }
  public function customers(){$q=$this->input->get('q',TRUE);$per_page=25;$total=$this->Bank_model->count_customers($q);$this->load->library('pagination');$this->config->load('pagination_custom',TRUE);$cfg=$this->config->item('pagination_custom')?:array();$cfg['base_url']=site_url('admin/customers');$cfg['total_rows']=$total;$cfg['per_page']=$per_page;$cfg['reuse_query_string']=TRUE;$cfg['first_url']=$cfg['base_url'];$this->pagination->initialize($cfg);$page=$this->input->get('page');$offset=((int)max(1,$page)-1)*$per_page;$this->page('customers',array('title'=>'Customers','customers'=>$this->Bank_model->customers($per_page,$q,$offset),'q'=>$q,'pagination'=>$this->pagination->create_links()));}
  public function customer($id){$customer=$this->Bank_model->customer_detail((int)$id);if(!$customer)show_404();$this->page('customer_detail',array('title'=>$customer['first_name'].' '.$customer['last_name'],'customer'=>$customer));}
  public function kyc($id){if($this->input->method()!=='post')show_404();$status=$this->input->post('kyc_status',TRUE);if($this->Bank_model->update_kyc_status((int)$id,$status)){$this->Bank_model->audit('kyc_updated','Customer #'.$id.' KYC set to '.$status,$this->user['id']);$this->session->set_flashdata('success','KYC status updated.');}else $this->session->set_flashdata('error','Invalid KYC status.');redirect('admin/customers/'.$id);}
