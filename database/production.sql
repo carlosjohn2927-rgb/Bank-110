@@ -181,6 +181,11 @@ SET @has_twofa := (SELECT COUNT(*) FROM information_schema.columns WHERE table_s
 SET @ddl := IF(@has_twofa = 0, 'ALTER TABLE users ADD COLUMN twofa_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER status', 'SELECT 1');
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
+-- TOTP authenticator-app 2FA (new in 2026.08 release)
+SET @has_totp := (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name='users' AND column_name='totp_secret');
+SET @ddl := IF(@has_totp = 0, 'ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64) NULL AFTER twofa_enabled, ADD COLUMN totp_confirmed TINYINT(1) NOT NULL DEFAULT 0 AFTER totp_secret, ADD COLUMN backup_codes_hash VARCHAR(255) NULL AFTER totp_confirmed', 'SELECT 1');
+PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 INSERT INTO users (id,username,email,password_hash,first_name,last_name,role,status,created_at,updated_at) VALUES
 (1,'northadmin','admin@northwest.financeltd.org','$2y$12$EltRBU5UuWsjluAHadTdPuyrSTUJLMKLUGH2X8HugEknRLIlhZGYe','North','Admin','admin','active',NOW(),NOW()),
 (2,'jamesd','james.davidson@example.com','$2y$12$GCWbJYR5lq3354CMwSGPl.jswvmIOZv9c0ymGny2Q4tdidcnhuedS','James','Davidson','customer','active',NOW(),NOW()),

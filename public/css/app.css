@@ -1026,3 +1026,63 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .fx-swap:hover{transform:rotate(270deg)}
   .fx-chart-stats{grid-template-columns:1fr 1fr}
 }
+
+/* ============================================================
+   TOTP AUTHENTICATOR-APP 2FA
+   ============================================================ */
+.totp-code-input{letter-spacing:6px;font-size:22px!important;font-weight:800;font-family:monospace;text-align:center}
+
+/* Setup page */
+.totp-setup{margin-top:8px}
+.totp-qr-panel .panel-head{height:auto;padding:18px 22px 10px}
+.totp-qr{display:flex;justify-content:center;padding:22px;background:#f8fbff;border-bottom:1px solid #eef2f7}
+.totp-qr svg{border:12px solid #fff;border-radius:12px;box-shadow:0 8px 24px rgba(10,40,80,.12);width:230px;height:230px}
+.totp-manual{padding:16px 22px;border-top:1px solid #eef2f7}
+.totp-manual summary{cursor:pointer;font-size:12.5px;font-weight:700;color:#1468e5}
+.totp-secret{display:flex;gap:10px;align-items:center;margin:12px 0 8px}
+.totp-secret code{flex:1;background:#f1f5fa;border:1px solid #e1e9f2;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:14px;font-weight:700;letter-spacing:1px;word-break:break-all}
+.totp-hint{font-size:11.5px;color:#7a8a9d;margin:0;line-height:1.5}
+.totp-verify{padding:22px;display:flex;flex-direction:column;gap:10px}
+.totp-verify label{font-size:11px;font-weight:800;color:#3c4c61;text-transform:uppercase;letter-spacing:.5px}
+.totp-verify .btn{margin-top:6px}
+.totp-timing{font-size:11.5px;color:#7a8a9d;margin:0;line-height:1.5}
+.totp-next{font-size:12px;color:#5a6a80;margin:0;text-align:center;line-height:1.5;padding-top:8px;border-top:1px solid #eef2f7}
+
+/* Settings 2FA status */
+.totp-status{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:11px;background:#fff;margin-top:10px}
+.totp-status i{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:18px;flex:none;background:#eef6ff;color:#1468e5}
+.totp-status--on{background:linear-gradient(100deg,#f3fbf6,#fff);border-color:#c6ecd9}
+.totp-status--on i{background:#e7f8f1;color:#15a36a}
+.totp-status div{flex:1}
+.totp-status b{display:block;font:700 14px Manrope;color:#0a1f3a;margin-bottom:2px}
+.totp-status small{font-size:12px;color:#7a8a9d;line-height:1.45}
+.totp-status .btn{padding:9px 16px;font-size:13px}
+.totp-disable{margin-top:10px;border:1px solid #ffd7dc;border-radius:9px;padding:12px 14px;background:#fff7f8}
+.totp-disable summary{cursor:pointer;font-size:12.5px;font-weight:700;color:#c33d4d}
+.totp-disable form{margin-top:10px}
+.totp-disable label{font-size:11px;font-weight:700;color:#3c4c61;text-transform:uppercase;letter-spacing:.5px}
+.totp-disable input{height:42px;border:1px solid var(--line);border-radius:8px;padding:0 12px;width:100%;font-size:14px}
+.btn-danger{background:linear-gradient(120deg,#c0392b,#e64b5d);color:#fff;box-shadow:0 6px 16px rgba(230,75,93,.28);border:0;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer}
+.btn-danger:hover{filter:brightness(1.06)}
+
+/* Backup codes */
+.backup-codes{max-width:640px;margin:24px auto}
+.backup-codes__head{padding:22px 26px;border-bottom:1px solid #eef2f7;text-align:center}
+.backup-codes__head b{font:800 18px Manrope;color:#0a1f3a;display:block}
+.backup-codes__head span{font-size:12.5px;color:#7a8a9d}
+.backup-codes__grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:26px}
+.backup-codes__grid code{background:#f4f8fd;border:1px dashed #cdd9e8;border-radius:8px;padding:12px 14px;font-family:monospace;font-size:15px;font-weight:700;letter-spacing:1px;text-align:center;color:#0a1f3a}
+.backup-codes__actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:0 26px 22px}
+.backup-codes__warn{background:#fff6e3;border-top:1px solid #ffe4a8;margin:0;padding:14px 26px;font-size:12.5px;color:#8a6d1f;text-align:center}
+.backup-codes__warn a{color:#1468e5;font-weight:700}
+
+/* Login 2FA alternative */
+.twofa-alt{margin-top:16px;text-align:center;border-top:1px solid var(--line);padding-top:14px}
+.twofa-alt summary{cursor:pointer;font-size:12px;font-weight:700;color:#5a6a80}
+.twofa-alt p{font-size:12.5px;color:#7a8a9d;margin:10px 0;line-height:1.5}
+
+@media print{
+  .home-nav,.home-foot,.chat-widget,.page-title,.btn,.backup-codes__actions{display:none!important}
+  .backup-codes{box-shadow:none;border:1px solid #ccc}
+  .backup-codes__grid code{border:1px solid #999}
+}

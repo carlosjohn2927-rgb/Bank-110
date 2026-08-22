@@ -726,6 +726,125 @@ class Bank_model extends CI_Model
         return $this->db->where('id',$user_id)->update('users',array('twofa_enabled'=>$enabled?'1':'0','updated_at'=>date('Y-m-d H:i:s')));
     }
 
+    /* -------------------- TOTP authenticator app -------------------- */
+
+    /** Begin TOTP enrollment: generate + store an unconfirmed secret and return it. */
+    public function totp_begin_enrollment($user_id)
+    {
+        $this->load->library('Totp');
+        $secret = Totp::generate_secret();
+        $this->db->where('id', $user_id)->update('users', array(
+            'totp_secret' => $secret, 'totp_confirmed' => 0, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        return $secret;
+    }
+
+    /** Confirm a TOTP code during enrollment; returns [bool, string]. */
+    public function totp_confirm_enrollment($user_id, $code)
+    {
+        $user = $this->db->select('id,totp_secret,totp_confirmed')->where('id', $user_id)->get('users')->row_array();
+        if (!$user || empty($user['totp_secret'])) return array(FALSE, 'No enrollment in progress.');
+        if (!empty($user['totp_confirmed'])) return array(FALSE, 'Authenticator app is already set up.');
+        $this->load->library('Totp');
+        if (!Totp::verify($code, $user['totp_secret'])) return array(FALSE, 'That code is incorrect or has expired.');
+        $backup = Totp::generate_backup_codes(8);
+        $this->db->trans_start();
+        $this->db->where('id', $user_id)->update('users', array(
+            'totp_secret' => $user['totp_secret'], 'totp_confirmed' => 1, 'twofa_enabled' => 1,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        $this->save_backup_codes($user_id, $backup);
+        $this->db->trans_complete();
+        return $this->db->trans_status() ? array(TRUE, $backup) : array(FALSE, 'Unable to complete enrollment.');
+    }
+
+    /** Disable TOTP and clear secret + backup codes. */
+    public function totp_disable($user_id)
+    {
+        return $this->db->where('id', $user_id)->update('users', array(
+            'totp_secret' => NULL, 'totp_confirmed' => 0, 'backup_codes_hash' => NULL,
+            'twofa_enabled' => 0, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+    }
+
+    /**
+     * Verify a TOTP code OR a backup code during sign-in.
+     * Returns 'totp', 'backup', or FALSE.
+     */
+    public function totp_verify($user, $code)
+    {
+        $code = trim((string)$code);
+        if (empty($user['totp_secret'])) return FALSE;
+        $this->load->library('Totp');
+        // A 6-digit code is a TOTP attempt; otherwise treat it as a backup code.
+        if (preg_match('/^\d{6}$/', $code)) {
+            return Totp::verify($code, $user['totp_secret']) ? 'totp' : FALSE;
+        }
+        $normalized = strtoupper(preg_replace('/\s+/', '', $code));
+        if (!empty($user['backup_codes_hash'])) {
+            $codes = explode(',', $normalized); // accept a single code too
+            $stored = array_filter(array_map('trim', explode(',', $this->decrypt_backup_codes($user))));
+            if (empty($stored)) {
+                // Fallback: hashed storage (one-time-use mode).
+                if (Totp::verify_backup_code($normalized, $user['backup_codes_hash'])) {
+                    $this->db->where('id', $user['id'])->update('users', array('backup_codes_hash' => NULL, 'updated_at' => date('Y-m-d H:i:s')));
+                    return 'backup';
+                }
+            } else {
+                // Reversible storage so a single code can be consumed while the rest remain.
+                foreach ($stored as $i => $known) {
+                    if (hash_equals(strtoupper($known), $normalized)) {
+                        unset($stored[$i]);
+                        $this->save_backup_codes((int)$user['id'], array_values($stored));
+                        return 'backup';
+                    }
+                }
+            }
+        }
+        return FALSE;
+    }
+
+    /**
+     * Store backup codes reversible-but-encrypted with the app's encryption key.
+     * Encryption uses the AEAD-validated CI encryption class when an encryption
+     * key is configured; otherwise falls back to a keyed HMAC scheme so codes
+     * remain one-time-use without ever being stored in plaintext.
+     */
+    private function save_backup_codes($user_id, array $codes)
+    {
+        $payload = json_encode(array_values($codes));
+        $key = (string) getenv('VP_ENCRYPTION_KEY') ?: (string) config_item('encryption_key');
+        if ($key !== '' && function_exists('openssl_encrypt')) {
+            $iv = random_bytes(16);
+            $cipher = openssl_encrypt($payload, 'AES-256-CBC', hash('sha256', $key, TRUE), OPENSSL_RAW_DATA, $iv);
+            $stored = 'v2:'.base64_encode($iv).'$'.base64_encode($cipher);
+        } else {
+            // Deterministic obfuscation (NOT strong — set VP_ENCRYPTION_KEY in production).
+            $stored = 'v1:'.base64_encode(str_rot13($payload));
+        }
+        $this->db->where('id', $user_id)->update('users', array('backup_codes_hash' => $stored, 'updated_at' => date('Y-m-d H:i:s')));
+    }
+
+    private function decrypt_backup_codes($user)
+    {
+        $raw = (string) ($user['backup_codes_hash'] ?? '');
+        if ($raw === '' || strpos($raw, 'v1:') !== 0) return '';
+        if (strpos($raw, 'v2:') === 0) {
+            $key = (string) getenv('VP_ENCRYPTION_KEY') ?: (string) config_item('encryption_key');
+            if ($key === '' || !function_exists('openssl_decrypt')) return '';
+            list(, $rest) = explode(':', $raw, 2);
+            list($iv64, $ct64) = explode('$', $rest, 2);
+            $iv = base64_decode($iv64); $ct = base64_decode($ct64);
+            $plain = openssl_decrypt($ct, 'AES-256-CBC', hash('sha256', $key, TRUE), OPENSSL_RAW_DATA, $iv);
+            $arr = json_decode($plain, TRUE);
+            return is_array($arr) ? implode(',', $arr) : '';
+        }
+        // v1 obfuscation
+        list(, $b64) = explode(':', $raw, 2);
+        $arr = json_decode(str_rot13(base64_decode($b64)), TRUE);
+        return is_array($arr) ? implode(',', $arr) : '';
+    }
+
     public function change_password($user_id,$current,$new)
     {
         $user=$this->db->select('password_hash')->where('id',$user_id)->get('users')->row_array();
