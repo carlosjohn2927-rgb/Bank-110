@@ -160,3 +160,25 @@ function tl($key)
 {
     return get_instance()->lang->line($key) ?: $key;
 }
+
+/**
+ * Human-readable "time ago" string, e.g. "3 minutes ago".
+ */
+function time_ago($datetime)
+{
+    $time = is_numeric($datetime) ? (int) $datetime : strtotime($datetime);
+    if (!$time) return '';
+    $diff = time() - $time;
+    if ($diff < 0) return date('M j, Y', $time);
+    $units = array(
+        31536000 => 'year', 2592000 => 'month', 604800 => 'week',
+        86400 => 'day', 3600 => 'hour', 60 => 'minute', 1 => 'second',
+    );
+    foreach ($units as $secs => $name) {
+        if ($diff >= $secs) {
+            $n = floor($diff / $secs);
+            return $n.' '.$name.($n === 1 ? '' : 's').' ago';
+        }
+    }
+    return 'just now';
+}

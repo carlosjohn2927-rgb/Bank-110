@@ -180,7 +180,7 @@ class Bank_model extends CI_Model
         $this->db->trans_complete();
         if ($this->db->trans_status() && function_exists('notify_user')) {
             try { notify_user($user_id, 'Transfer '.$reference.' submitted', '<p>Your transfer of '.$this->money_local($amount, $account['currency']).' to '.htmlspecialchars($data['recipient_name']).' has been submitted and is being processed.</p><p>Reference: <b>'.$reference.'</b></p>','','notify_transfers'); } catch (Exception $e) {}
-            try { $this->add_notification($user_id,'transfer','Transfer '.$reference.' submitted','To '.$data['recipient_name'].' · '.$this->money_local($amount, $account['currency']),'transactions'); } catch (Exception $e) {}
+            try { $this->notify_user($user_id,'transfer','Transfer '.$reference.' submitted','To '.$data['recipient_name'].' · '.$this->money_local($amount, $account['currency']),'transactions'); } catch (Exception $e) {}
         }
         return $this->db->trans_status() ? array(TRUE, $reference) : array(FALSE, 'The transfer could not be submitted.');
     }
@@ -214,6 +214,7 @@ class Bank_model extends CI_Model
             'is_frozen'=>0,'online_enabled'=>1,'international_enabled'=>0,'daily_limit'=>round((float)($data['daily_limit']?:10000),2),'created_at'=>$now,'updated_at'=>$now
         ));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user_id,'card','New card issued','A new card ending in '.$last_four.' has been added to your account.','cards'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,'Card ending in '.$last_four.' issued.'):array(FALSE,'Unable to issue the card.');
     }
 
@@ -427,7 +428,7 @@ class Bank_model extends CI_Model
         $this->db->trans_complete();
         if($this->db->trans_status() && function_exists('notify_user')){
             try{notify_user((int)$transfer['user_id'],'Transfer '.$transfer['reference'].' completed','<p>Your transfer of '.$this->money_local($transfer['amount'],$transfer['currency']).' to '.htmlspecialchars($transfer['recipient_name']).' has been completed.</p>','','notify_transfers');}catch(Exception $e){}
-            try { $this->add_notification((int)$transfer['user_id'],'transfer','Transfer '.$transfer['reference'].' completed','To '.$transfer['recipient_name'].' · '.$this->money_local($transfer['amount'],$transfer['currency']),'transactions'); } catch (Exception $e) {}
+            try { $this->notify_user((int)$transfer['user_id'],'transfer','Transfer '.$transfer['reference'].' completed','To '.$transfer['recipient_name'].' · '.$this->money_local($transfer['amount'],$transfer['currency']),'transactions'); } catch (Exception $e) {}
         }
         return $this->db->trans_status()?array(TRUE,$transfer['reference']):array(FALSE,'The transfer could not be completed.');
     }
@@ -521,7 +522,7 @@ class Bank_model extends CI_Model
             try {
                 $t=$this->ticket($id);
                 if(!empty($t['email'])) notify_user((int)$t['user_id'], 'Update on support request '.$t['reference'], '<p>NorthWest support has replied to your request <b>'.$t['reference'].'</b>.</p><p><i>'.htmlspecialchars(substr($message,0,200)).'</i></p>','','notify_tickets');
-                try { $this->add_notification((int)$t['user_id'],'ticket','Support reply on '.$t['reference'],'NorthWest support replied to your request','support/'.$id); } catch (Exception $e) {}
+                try { $this->notify_user((int)$t['user_id'],'ticket','Support reply on '.$t['reference'],'NorthWest support replied to your request','support/'.$id); } catch (Exception $e) {}
             } catch (Exception $e) {}
         }
         return $this->db->trans_status();
@@ -566,6 +567,7 @@ class Bank_model extends CI_Model
         $this->db->where('id',$loan['id'])->update('loans',array('outstanding_balance'=>$new_balance,'payments_remaining'=>$remaining,'status'=>$status,'updated_at'=>$now));
         $this->db->insert('transactions',array('account_id'=>$account['id'],'reference'=>$reference,'type'=>'debit','category'=>'Loan payment','description'=>'Loan payment '.$loan['reference'],'amount'=>$amount,'currency'=>$account['currency'],'balance_after'=>(float)$account['available_balance']-$amount,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user_id,'loan',$status==='paid'?'Loan paid off':'Loan payment received',$status==='paid'?'Congratulations — loan '.$loan['reference'].' is fully repaid.':'Your payment of '.$this->money_local($amount,$account['currency']).' was received.','loans'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'The loan payment could not be processed.');
     }
 
@@ -588,6 +590,7 @@ class Bank_model extends CI_Model
             'status'=>'active','created_at'=>$now,'updated_at'=>$now
         ));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user_id,'loan','Loan application approved','Your loan '.$reference.' has been opened. Monthly payment '.$this->money_local($payment,'USD').'.','loans'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'Unable to process the loan application.');
     }
 
@@ -601,6 +604,7 @@ class Bank_model extends CI_Model
         $this->db->trans_start();
         $this->db->insert('cards',array('user_id'=>$account['user_id'],'account_id'=>$account['id'],'cardholder_name'=>$account['first_name'].' '.$account['last_name'],'masked_number'=>'•••• •••• •••• '.$last_four,'last_four'=>$last_four,'expiry_month'=>random_int(1,12),'expiry_year'=>(int)date('Y')+random_int(3,5),'card_type'=>in_array($data['card_type'],array('virtual','physical'),TRUE)?$data['card_type']:'physical','network'=>'Visa','status'=>'active','is_frozen'=>0,'online_enabled'=>1,'international_enabled'=>1,'daily_limit'=>round((float)($data['daily_limit']?:10000),2),'created_at'=>$now,'updated_at'=>$now));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($account['user_id'],'card','New card issued','A new card ending in '.$last_four.' has been added to your account.','cards'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,'Card ending in '.$last_four.' issued.'):array(FALSE,'Unable to issue the card.');
     }
 
@@ -642,6 +646,7 @@ class Bank_model extends CI_Model
         $this->db->trans_start();
         $this->db->insert('loans',array('user_id'=>$user['id'],'reference'=>$reference,'type'=>trim($data['type'] ?: 'Personal loan'),'principal'=>$amount,'outstanding_balance'=>$amount,'interest_rate'=>$rate,'monthly_payment'=>$payment,'next_payment_date'=>date('Y-m-d',strtotime('+1 month')),'term_months'=>$term,'payments_remaining'=>$term,'status'=>'active','created_at'=>$now,'updated_at'=>$now));
         $this->db->trans_complete();
+        if($this->db->trans_status()){ try{ $this->notify_user($user['id'],'loan','Loan issued','A loan '.$reference.' has been opened on your account. Monthly payment '.$this->money_local($payment,'USD').'.','loans'); }catch(Exception $e){} }
         return $this->db->trans_status()?array(TRUE,$reference):array(FALSE,'Unable to create the loan.');
     }
 
@@ -866,11 +871,26 @@ class Bank_model extends CI_Model
         ));
     }
 
-    public function notifications($user_id, $limit=20, $unread_only=FALSE)
+    public function notifications($user_id, $limit=20, $unread_only=FALSE, $filter=NULL, $offset=0)
     {
         $this->db->where('user_id',(int)$user_id);
         if($unread_only)$this->db->where('is_read',0);
+        if($filter && in_array($filter,array('unread','transfer','ticket','security','loan','card','deposit','general'),TRUE)){
+            if($filter==='unread')$this->db->where('is_read',0);
+            else $this->db->where('type',$filter);
+        }
+        if($offset>0)$this->db->offset((int)$offset);
         return $this->db->order_by('id','DESC')->limit($limit)->get('user_notifications')->result_array();
+    }
+
+    public function count_notifications($user_id, $filter=NULL)
+    {
+        $this->db->where('user_id',(int)$user_id);
+        if($filter && in_array($filter,array('unread','transfer','ticket','security','loan','card','deposit','general'),TRUE)){
+            if($filter==='unread')$this->db->where('is_read',0);
+            else $this->db->where('type',$filter);
+        }
+        return $this->db->count_all_results('user_notifications');
     }
 
     public function unread_notification_count($user_id)
@@ -878,9 +898,66 @@ class Bank_model extends CI_Model
         return $this->db->where('user_id',(int)$user_id)->where('is_read',0)->count_all_results('user_notifications');
     }
 
+    /** Unread count grouped by type (for filter badges). */
+    public function unread_counts_by_type($user_id)
+    {
+        $rows=$this->db->select('type, COUNT(*) c')->where('user_id',(int)$user_id)->where('is_read',0)->group_by('type')->get('user_notifications')->result_array();
+        $out=array(); foreach($rows as $r)$out[$r['type']]=(int)$r['c'];
+        return $out;
+    }
+
+    public function notification($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->get('user_notifications')->row_array();
+    }
+
+    public function mark_notification_read($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id,'is_read'=>0))->update('user_notifications', array('is_read'=>1));
+    }
+
     public function mark_notifications_read($user_id)
     {
         return $this->db->where('user_id',(int)$user_id)->where('is_read',0)->update('user_notifications', array('is_read'=>1));
+    }
+
+    public function delete_notification($id, $user_id)
+    {
+        return $this->db->where(array('id'=>(int)$id,'user_id'=>(int)$user_id))->delete('user_notifications');
+    }
+
+    public function delete_all_notifications($user_id)
+    {
+        return $this->db->where('user_id',(int)$user_id)->delete('user_notifications');
+    }
+
+    /**
+     * Whether a notification TYPE is enabled for this user according to their
+     * stored preferences. Security notifications are always delivered.
+     */
+    public function notification_enabled($user_id, $type)
+    {
+        if($type==='security') return TRUE; // security alerts can't be disabled
+        $map=array(
+            'transfer'=>'notify_transfers','deposit'=>'notify_transfers',
+            'ticket'=>'notify_tickets','loan'=>'notify_loans','card'=>'notify_cards',
+            'general'=>'notify_general',
+        );
+        $key=$map[$type] ?? NULL;
+        if(!$key) return TRUE;
+        $prefs=$this->preferences($user_id);
+        // Default ON unless explicitly disabled.
+        return ($prefs[$key] ?? '1') !== '0';
+    }
+
+    /**
+     * Create a notification — but only if the user's preferences allow that
+     * type. Security notifications are always stored.
+     */
+    public function OLDNAME
+    {
+        if(!$this->notification_enabled($user_id, $type)) return FALSE;
+        return $this->add_notification($user_id, $type, $title, $body, $link);
     }
 
     public function login_attempts($key, $window_seconds=900, $max=5)
@@ -1096,7 +1173,7 @@ class Bank_model extends CI_Model
             'status' => 'pending', 'created_at' => $now, 'updated_at' => $now,
         ));
         $id = $this->db->insert_id();
-        try { $this->add_notification((int)$user_id, 'deposit', 'Check deposit submitted', 'Your deposit of '.money($amount, $account['currency']).' ('.$reference.') is pending review.', 'deposits'); } catch (Exception $e) {}
+        try { $this->notify_user((int)$user_id, 'deposit', 'Check deposit submitted', 'Your deposit of '.money($amount, $account['currency']).' ('.$reference.') is pending review.', 'deposits'); } catch (Exception $e) {}
         return array(TRUE, $reference);
     }
 
@@ -1141,7 +1218,7 @@ class Bank_model extends CI_Model
         $msg = $approve
             ? 'Check deposit '.$deposit['reference'].' approved and credited to your account.'
             : 'Check deposit '.$deposit['reference'].' was rejected. '.(string)$note;
-        try { $this->add_notification((int)$deposit['user_id'], 'deposit', $approve ? 'Deposit approved' : 'Deposit rejected', $msg, 'deposits'); } catch (Exception $e) {}
+        try { $this->notify_user((int)$deposit['user_id'], 'deposit', $approve ? 'Deposit approved' : 'Deposit rejected', $msg, 'deposits'); } catch (Exception $e) {}
         return array(TRUE, $status);
     }
 
