@@ -1331,6 +1331,56 @@ class Bank_model extends CI_Model
         return $out;
     }
 
+    /* -------------------- Statements -------------------- */
+
+    /**
+     * Transactions for one account over a month, ordered oldest→newest so
+     * the running balance reads chronologically.
+     */
+    public function statement_transactions($account_id, $year, $month)
+    {
+        $start = sprintf('%04d-%02d-01 00:00:00', (int)$year, (int)$month);
+        $end = date('Y-m-t 23:59:59', strtotime($start));
+        return $this->db->where('account_id', (int)$account_id)
+            ->where('created_at >=', $start)->where('created_at <=', $end)
+            ->where('status', 'completed')
+            ->order_by('created_at', 'ASC')->order_by('id', 'ASC')
+            ->get('transactions')->result_array();
+    }
+
+    /**
+     * Opening balance for an account at the start of a month: the current
+     * balance minus every completed credit/debit delta from the month onward.
+     */
+    public function opening_balance($account_id, $year, $month)
+    {
+        $account = $this->db->select('balance')->where('id', (int)$account_id)->get('accounts')->row_array();
+        if (!$account) return 0.0;
+        $current = (float)$account['balance'];
+        $cutoff = sprintf('%04d-%02d-01 00:00:00', (int)$year, (int)$month);
+        return round($current - $this->posted_delta($account_id, $cutoff), 2);
+    }
+
+    /** Sum of credit/debit deltas posted at/after a given timestamp. */
+    private function posted_delta($account_id, $since)
+    {
+        $row = $this->db->select_sum('CASE WHEN type="credit" THEN amount ELSE -amount END', 'delta')
+            ->where('account_id', (int)$account_id)->where('created_at >=', $since)
+            ->where('status', 'completed')
+            ->get('transactions')->row();
+        return (float)($row->delta ?? 0);
+    }
+
+    /** List of months (YYYY-MM) that have transactions for any of the user's accounts, newest first. */
+    public function statement_months($user_id)
+    {
+        $rows = $this->db->select("DISTINCT DATE_FORMAT(t.created_at,'%Y-%m') AS ym", FALSE)
+            ->from('transactions t')->join('accounts a', 'a.id=t.account_id')
+            ->where('a.user_id', (int)$user_id)
+            ->order_by('ym', 'DESC')->limit(36)->get()->result_array();
+        return array_column($rows, 'ym');
+    }
+
     public function save_settings($values)
     {
         foreach($values as $key=>$value)$this->db->replace('settings',array('setting_key'=>$key,'setting_value'=>$value,'updated_at'=>date('Y-m-d H:i:s')));

@@ -6,6 +6,7 @@ $lang['nav_overview']      = 'Übersicht';
 $lang['nav_accounts']      = 'Meine Konten';
 $lang['nav_deposit_check'] = 'Scheck einzahlen';
 $lang['nav_transactions']  = 'Transaktionen';
+$lang['nav_statements']    = 'Auszüge';
 $lang['nav_send_money']    = 'Geld senden';
 $lang['nav_exchange']      = 'Wechsel';
 $lang['nav_beneficiaries'] = 'Begünstigte';

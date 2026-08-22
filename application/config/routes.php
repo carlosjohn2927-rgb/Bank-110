@@ -51,6 +51,10 @@ $route['accounts/(:num)/status'] = 'accounts/status/$1';
 $route['transactions'] = 'transactions/index';
 $route['transactions/statement'] = 'transactions/statement';
 $route['transactions/(:num)'] = 'transactions/view/$1';
+
+// Monthly PDF statements
+$route['statements'] = 'statements/index';
+$route['statements/(:num)/(:num)/(:num)'] = 'statements/download/$1/$2/$3';
 $route['transfer'] = 'transfers/create';
 $route['transfers'] = 'transfers/index';
 $route['transfers/(:num)/cancel'] = 'transfers/cancel/$1';
