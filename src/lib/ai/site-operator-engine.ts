@@ -30,6 +30,9 @@ export type BankContext = {
   totalBalance?: number;
   accounts?: Array<{ name: string; account_number: string; available_balance: number; type: string; is_primary: number }>;
   transactions?: Array<{ description: string; category: string; amount: number; type: string; transaction_date: string }>;
+  goals?: Array<{ name: string; target_amount: number; saved_amount: number; status: string }>;
+  monthlySummary?: { income: number; expenses: number };
+  spendingBreakdown?: Array<{ category: string; total: number }>;
 };
 
 export type QuickReply = { label: string; value: string };
@@ -55,13 +58,13 @@ const INTENTS: Array<{
     keywords: /^(hi|hello|hey|good (morning|afternoon|evening)|yo|howdy)\b/i,
     handler: (u, c) => ({
       text: u
-        ? `Hello ${u.first_name} 👋 Welcome to ${c.institutionName || 'NorthWest'}. I can check your balance, show recent activity, explain transfers, cards, loans and security, and guide you to support. What would you like help with?`
+        ? `Hello ${u.first_name} 👋 Welcome to ${c.institutionName || 'NorthWest'}. I can check your balance, show recent activity, track savings goals, analyze your budget, and explain transfers, cards, loans and security. What would you like help with?`
         : `Hello 👋 Welcome to ${c.institutionName || 'NorthWest'}. I can help you learn about our services, transfers, cards, loans, fees and security. To see live account info, please sign in first.`,
       quick: u ? [
         { label: '💰 My balance', value: 'What is my balance?' },
-        { label: '📊 Recent activity', value: 'Show my recent transactions' },
+        { label: '🎯 Savings goals', value: 'How are my savings goals?' },
+        { label: '📊 My budget', value: 'How is my spending this month?' },
         { label: '↗ Send money', value: 'How do I send money?' },
-        { label: '🛟 Support', value: 'I need help from support' },
       ] : [
         { label: '🏦 Open an account', value: 'How do I open an account?' },
         { label: '💳 Cards', value: 'How do card controls work?' },
@@ -119,7 +122,7 @@ const INTENTS: Array<{
   {
     id: 'transfer',
     keywords: /(transfer|send money|pay someone|send (to|money)|recipient|beneficiar|wire|make a payment|how do i send)/i,
-    handler: (u) => ({
+    handler: (u, c) => ({
       text: `You can send money from the "Send money" page.\n\n1. Pick the account to send from.\n2. Choose a saved beneficiary or enter the recipient's name, account number and bank.\n3. Enter the amount and (optionally) a note.\n4. Review and submit — transfers are processed with end-to-end encryption.\n\nThe daily transfer limit is ${c?.dailyTransferLimit ?? '25,000'}.`,
       quick: [
         { label: '↗ Go to Send money', value: 'Take me to Send money' },
@@ -157,6 +160,87 @@ const INTENTS: Array<{
       quick: [{ label: '▥ View loans', value: 'Tell me more about loans' }],
       actions: [{ label: 'Open Loans', url: '/loans' }],
     }),
+  },
+  {
+    id: 'goals',
+    keywords: /(savings goal|saving goal|my goal|goal(s| progress)?|save up|save for|target (amount|saving)|how (close|much).*(goal|saved))/i,
+    handler: (u, c) => {
+      if (!u) {
+        return {
+          text: `Savings goals let you set a target, add money as you go, and watch your progress grow. Once you sign in you can create goals for a holiday, a home or anything else — it's completely free.`,
+          quick: [{ label: '🔑 Sign in', value: 'How do I sign in?' }],
+          actions: [{ label: 'Go to sign in', url: '/user/login' }],
+        };
+      }
+      const goals = c.goals || [];
+      if (goals.length === 0) {
+        return {
+          text: `You don't have any savings goals yet. 🎯\n\nCreate one on the Savings goals page — give it a name, a target amount and an optional date, then add money whenever you like. You can track every goal's progress at a glance.`,
+          quick: [
+            { label: '💰 My balance', value: 'What is my balance?' },
+            { label: '📊 My budget', value: 'How is my spending this month?' },
+          ],
+          actions: [{ label: 'Create a goal', url: '/goals' }],
+        };
+      }
+      let totalSaved = 0, totalTarget = 0, completed = 0;
+      const lines = goals.map((g) => {
+        totalSaved += Number(g.saved_amount);
+        totalTarget += Number(g.target_amount);
+        if (g.status === 'completed') completed++;
+        const pct = g.target_amount > 0 ? Math.min(100, Math.round((Number(g.saved_amount) / Number(g.target_amount)) * 100)) : 0;
+        return `  • ${g.name} — ${fmtMoney(g.saved_amount, c.defaultCurrency)} of ${fmtMoney(g.target_amount, c.defaultCurrency)} (${pct}%)`;
+      });
+      const overall = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
+      let summary = `Across ${goals.length} goal${goals.length === 1 ? '' : 's'} you've saved ${fmtMoney(totalSaved, c.defaultCurrency)} of ${fmtMoney(totalTarget, c.defaultCurrency)} — that's ${overall}% of the way`;
+      if (completed > 0) summary += `, and ${completed} goal${completed === 1 ? ' is' : 's are'} already complete 🎉`;
+      return {
+        text: `${summary}.\n\n${lines.join('\n')}\n\nOpen Savings goals to add money, create a new goal or adjust a target.`,
+        quick: [
+          { label: '➕ Add money to a goal', value: 'I want to add money to a goal' },
+          { label: '📊 My budget', value: 'How is my spending this month?' },
+          { label: '💰 My balance', value: 'What is my balance?' },
+        ],
+        actions: [{ label: 'Open Savings goals', url: '/goals' }],
+      };
+    },
+  },
+  {
+    id: 'budget',
+    keywords: /(budget|spending|spent|expense|what did i spend|where does my money|category|categories|savings rate|how much did i (spend|save))/i,
+    handler: (u, c) => {
+      if (!u) {
+        return {
+          text: `Budget & Insights shows your income versus spending, breaks down where your money goes by category, and lets you set monthly limits — once you're signed in.`,
+          quick: [{ label: '🔑 Sign in', value: 'How do I sign in?' }],
+          actions: [{ label: 'Go to sign in', url: '/user/login' }],
+        };
+      }
+      const m = c.monthlySummary || { income: 0, expenses: 0 };
+      const income = Number(m.income) || 0;
+      const expenses = Number(m.expenses) || 0;
+      const net = income - expenses;
+      const rate = income > 0 ? Math.round((net / income) * 100) : 0;
+      const lines = (c.spendingBreakdown || []).slice(0, 4).map(
+        (r) => `  • ${r.category} — ${fmtMoney(r.total, c.defaultCurrency)}`
+      );
+      let text = `Here's your money picture for ${new Date().toLocaleString('en-US', { month: 'long' })}:\n\n`;
+      text += `  Income:    ${fmtMoney(income, c.defaultCurrency)}\n`;
+      text += `  Spent:     ${fmtMoney(expenses, c.defaultCurrency)}\n`;
+      text += `  Net saved: ${fmtMoney(Math.max(0, net), c.defaultCurrency)} (${rate}% savings rate)\n`;
+      if (lines.length) text += `\nTop spending categories:\n${lines.join('\n')}`;
+      if (income > 0 && net < 0) text += `\n\n⚠️ You're spending more than you've earned this month — consider setting a category limit on the Budget page.`;
+      else if (rate >= 20) text += `\n\n💪 Great job — a savings rate of 20% or more puts you well ahead.`;
+      return {
+        text,
+        quick: [
+          { label: '🎯 My goals', value: 'How are my savings goals?' },
+          { label: '📊 Recent activity', value: 'Show my recent transactions' },
+          { label: '↗ Send money', value: 'How do I send money?' },
+        ],
+        actions: [{ label: 'Open Budget', url: '/budget' }],
+      };
+    },
   },
   {
     id: 'security',
@@ -223,12 +307,12 @@ const INTENTS: Array<{
 
 /** fallback reply used when no intent matches */
 const fallbackReply = (): EngineReply => ({
-  text: `I'm not sure I understood that. I can help with your balance, transactions, transfers, cards, loans, fees and security — or connect you with the support team.\n\nTry one of the quick options below, or just rephrase your question.`,
+  text: `I'm not sure I understood that. I can help with your balance, savings goals, budget and spending, transactions, transfers, cards, loans, fees and security — or connect you with the support team.\n\nTry one of the quick options below, or just rephrase your question.`,
   quick: [
     { label: '💰 My balance', value: 'What is my balance?' },
+    { label: '🎯 Savings goals', value: 'How are my savings goals?' },
+    { label: '📊 My budget', value: 'How is my spending this month?' },
     { label: '↗ Send money', value: 'How do I send money?' },
-    { label: '🔐 Security', value: 'How is my account secure?' },
-    { label: '🛟 Support', value: 'I need help from support' },
   ],
 });
 
