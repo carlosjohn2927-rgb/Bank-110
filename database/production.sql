@@ -148,6 +148,19 @@ CREATE TABLE IF NOT EXISTS savings_goals (
  INDEX idx_savings_goals_user(user_id), CONSTRAINT fk_savings_goal_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Mobile check deposits (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS check_deposits (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, account_id BIGINT UNSIGNED NOT NULL,
+ reference VARCHAR(40) NOT NULL UNIQUE, amount DECIMAL(18,2) NOT NULL, check_number VARCHAR(40) NULL,
+ front_image_path VARCHAR(255) NOT NULL, back_image_path VARCHAR(255) NOT NULL,
+ status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+ review_note VARCHAR(255) NULL, transaction_id BIGINT UNSIGNED NULL,
+ created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
+ INDEX idx_check_deposits_user(user_id), INDEX idx_check_deposits_status(status),
+ CONSTRAINT fk_check_deposit_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+ CONSTRAINT fk_check_deposit_account FOREIGN KEY(account_id) REFERENCES accounts(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET NAMES utf8mb4;
 
 -- Add recipient_routing column to transfers if missing (safe for existing installs).

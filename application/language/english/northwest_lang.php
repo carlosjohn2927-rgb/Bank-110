@@ -4,6 +4,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 // Customer navigation
 $lang['nav_overview']      = 'Overview';
 $lang['nav_accounts']      = 'My accounts';
+$lang['nav_deposit_check'] = 'Deposit check';
 $lang['nav_transactions']  = 'Transactions';
 $lang['nav_send_money']    = 'Send money';
 $lang['nav_exchange']      = 'Exchange';

@@ -55,6 +55,11 @@ $route['transfers/(:num)/cancel'] = 'transfers/cancel/$1';
 $route['bills'] = 'bills/index';
 $route['bills/pay'] = 'bills/pay';
 
+// Mobile check deposit
+$route['deposits'] = 'deposits/index';
+$route['deposits/create'] = 'deposits/create';
+$route['deposits/(:num)'] = 'deposits/view/$1';
+
 // Savings goals
 $route['goals'] = 'goals/index';
 $route['goals/create'] = 'goals/create';
@@ -106,6 +111,9 @@ $route['admin/transactions/(:num)'] = 'admin/transaction/$1';
 $route['admin/transactions/(:num)/status'] = 'admin/transaction_status/$1';
 $route['admin/transfers'] = 'admin/transfers';
 $route['admin/deposits'] = 'admin/deposits';
+$route['admin/check-deposits'] = 'admin/check_deposits';
+$route['admin/check-deposits/(:num)/review'] = 'admin/check_deposit_review/$1';
+$route['admin/check-deposits/(:num)'] = 'admin/check_deposit/$1';
 $route['admin/loans'] = 'admin/loans';
 $route['admin/cards'] = 'admin/cards';
 $route['admin/tickets'] = 'admin/tickets';

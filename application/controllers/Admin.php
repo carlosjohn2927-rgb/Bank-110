@@ -21,6 +21,27 @@ class Admin extends MY_Controller {
  public function transactions(){$q=$this->input->get('q',TRUE);$this->admin_tx_page(NULL,$q,'All transactions','');}
  public function transfers(){$q=$this->input->get('q',TRUE);$this->admin_tx_page('transfers',$q,'Transfer operations','transfers');}
  public function deposits(){$q=$this->input->get('q',TRUE);$this->admin_tx_page('deposits',$q,'Deposit operations','deposits');}
+ public function check_deposits(){
+  $status=$this->input->get('status',TRUE)?:'pending';
+  $per_page=25;$total=$this->Bank_model->count_check_deposits($status);
+  $this->load->library('pagination');$this->config->load('pagination_custom',TRUE);
+  $cfg=$this->config->item('pagination_custom')?:array();
+  $cfg['base_url']=site_url('admin/check-deposits');$cfg['total_rows']=$total;$cfg['per_page']=$per_page;$cfg['reuse_query_string']=TRUE;$cfg['first_url']=$cfg['base_url'];
+  $this->pagination->initialize($cfg);
+  $page=$this->input->get('page');$offset=((int)max(1,$page)-1)*$per_page;
+  $counts=array('pending'=>$this->Bank_model->count_check_deposits('pending'),'approved'=>$this->Bank_model->count_check_deposits('approved'),'rejected'=>$this->Bank_model->count_check_deposits('rejected'));
+  $this->page('check_deposits',array('title'=>'Check deposits','deposits'=>$this->Bank_model->all_check_deposits($status,$per_page,$offset),'status'=>$status,'counts'=>$counts,'pagination'=>$this->pagination->create_links()));
+ }
+ public function check_deposit($id){$d=$this->Bank_model->check_deposit($id);if(!$d)show_404();$this->page('check_deposit',array('title'=>'Deposit '.$d['reference'],'deposit'=>$d));}
+ public function check_deposit_review($id){
+  if($this->input->method()!=='post')show_404();
+  $approve=$this->input->post('action')==='approve';
+  $note=$this->input->post('note',TRUE);
+  list($ok,$msg)=$this->Bank_model->review_check_deposit((int)$id,$approve,$note);
+  if($ok){$this->Bank_model->audit('check_deposit_'.($approve?'approved':'rejected'),'Check deposit #'.$id.' '.$msg,$this->user['id']);$this->session->set_flashdata('success','Deposit '.$msg.'.');}
+  else $this->session->set_flashdata('error',$msg);
+  redirect('admin/check-deposits');
+ }
  private function admin_tx_page($kind,$q,$heading,$kindkey){
   $per_page=25; $total=$this->Bank_model->count_all_transactions($kind,$q);
   $this->load->library('pagination');$this->config->load('pagination_custom',TRUE);$cfg=$this->config->item('pagination_custom')?:array();

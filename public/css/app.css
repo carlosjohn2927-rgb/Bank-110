@@ -841,3 +841,130 @@ dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
   .goals-grid{grid-template-columns:1fr}
   .bar-chart{height:180px}
 }
+
+/* ============================================================
+   MOBILE CHECK DEPOSIT (customer + admin)
+   ============================================================ */
+.deposit-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.deposit-kpi{background:#fff;border:1px solid var(--line);border-radius:11px;padding:20px;box-shadow:0 2px 10px rgba(24,45,70,.04)}
+.deposit-kpi span{font-size:11px;color:#7d8b9d;font-weight:700;text-transform:uppercase;letter-spacing:.6px;display:block}
+.deposit-kpi b{display:block;font:800 26px Manrope;color:#0a1f3a;margin-top:4px}
+.deposit-kpi small{font-size:11px;color:#8494a6}
+.deposit-kpi--info{background:linear-gradient(120deg,#07213f,#1468e5);color:#fff}
+.deposit-kpi--info span,.deposit-kpi--info small{color:rgba(255,255,255,.75)}
+.deposit-kpi--info b{color:#fff}
+
+.deposit-grid{grid-template-columns:1.1fr .9fr}
+.deposit-form{padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+.deposit-form>label{font-size:11px;font-weight:700;color:#3c4c61;text-transform:uppercase;letter-spacing:.5px;display:flex;flex-direction:column;gap:6px}
+.deposit-form select,.deposit-form input[type=number],.deposit-form input[type=text]{height:44px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:14px;font-weight:500;background:#fff;text-transform:none;letter-spacing:0}
+.deposit-form select:focus,.deposit-form input:focus{outline:none;border-color:#1468e5;box-shadow:0 0 0 3px rgba(20,104,229,.12)}
+
+.check-photos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
+.check-photo{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:180px;border:2px dashed #cdd9e8;border-radius:13px;background:#f7faff;cursor:pointer;text-align:center;padding:20px;transition:.15s;overflow:hidden}
+.check-photo:hover{border-color:#1468e5;background:#eef5ff}
+.check-photo input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.check-photo__icon{font-size:34px;line-height:1}
+.check-photo b{font:700 14px Manrope;color:#1d3351}
+.check-photo small{font-size:11.5px;color:#7a8a9d}
+.check-photo__preview{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#fff}
+.check-photo.has-image{border-style:solid;border-color:#1468e5;padding:0}
+.check-photo.has-image .check-photo__icon,.check-photo.has-image b,.check-photo.has-image small{display:none}
+.check-photo.has-image .check-photo__preview{display:block}
+
+.deposit-tip{background:#f4f8fd;border:1px solid #dce8f6;border-radius:10px;padding:14px 16px}
+.deposit-tip b{font-size:12.5px;color:#0d4f95;display:block;margin-bottom:6px}
+.deposit-tip ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.deposit-tip li{font-size:12px;color:#4a5a70;line-height:1.45}
+
+/* Status pills */
+.deposit-status{display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.deposit-status--pending{background:#fff6e3;color:#b7791f}
+.deposit-status--approved{background:#e7f8f1;color:#15a36a}
+.deposit-status--rejected{background:#fff0f2;color:#c33d4d}
+.deposit-status--lg{font-size:12.5px;padding:6px 14px}
+
+/* Customer deposit list */
+.deposit-list{padding:8px}
+.deposit-row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid #eef2f7;transition:background .12s}
+.deposit-row:last-child{border-bottom:0}
+.deposit-row:hover{background:#f8fbff}
+.deposit-row__icon{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:16px;flex:none}
+.deposit-row--pending .deposit-row__icon{background:#fff6e3;color:#b7791f}
+.deposit-row--approved .deposit-row__icon{background:#e7f8f1;color:#15a36a}
+.deposit-row--rejected .deposit-row__icon{background:#fff0f2;color:#c33d4d}
+.deposit-row__body{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.deposit-row__body b{font:700 15px Manrope;color:#1d3351}
+.deposit-row__body small{font-size:11.5px;color:#8494a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Deposit detail */
+.deposit-detail-grid{grid-template-columns:1.2fr .8fr}
+.check-images{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:22px 24px 26px}
+.check-image{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#f4f7fb;aspect-ratio:1.85;display:block}
+.check-image img{width:100%;height:100%;object-fit:cover;display:block}
+.check-image span{position:absolute;left:10px;top:10px;background:rgba(10,31,58,.75);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+.check-image--admin figure{margin:0}
+.detail-list{padding:8px 24px}
+.detail-list>div{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid #f0f3f7;font-size:14px}
+.detail-list>div:last-child{border-bottom:0}
+.detail-list span{color:#7d8b9d}
+.detail-list b{color:#1d3351;text-align:right;font-weight:700}
+.detail-list b.amount{font:800 18px Manrope;color:#0a1f3a}
+.deposit-note{margin:6px 24px 24px;padding:14px 16px;background:#fff0f2;border:1px solid #ffd7dc;border-radius:10px}
+.deposit-note b{font-size:12.5px;color:#c33d4d;display:block;margin-bottom:5px}
+.deposit-note p{margin:0;font-size:13px;color:#5a6a80;line-height:1.5}
+.deposit-pending-note,.deposit-success-note,.deposit-rejected-note{margin:8px 24px 24px;padding:16px;border-radius:11px}
+.deposit-pending-note{background:#fff6e3;border:1px solid #ffe4a8}
+.deposit-success-note{background:#e7f8f1;border:1px solid #c9efdf}
+.deposit-rejected-note{background:#fff0f2;border:1px solid #ffd7dc}
+.deposit-pending-note b,.deposit-success-note b,.deposit-rejected-note b{display:block;margin-bottom:6px;font-size:13.5px}
+.deposit-pending-note p,.deposit-success-note p,.deposit-rejected-note p{margin:0 0 12px;font-size:13px;line-height:1.55;color:#4a5a70}
+
+/* Admin review */
+.check-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.check-tab{display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 18px;font-size:13px;font-weight:700;color:#4a5a70;transition:.15s}
+.check-tab b{background:#f0f3f7;color:#5a6a80;font-size:11px;padding:2px 9px;border-radius:999px}
+.check-tab:hover{border-color:#1468e5;color:#1468e5}
+.check-tab.is-active{background:#1468e5;border-color:#1468e5;color:#fff}
+.check-tab.is-active b{background:rgba(255,255,255,.22);color:#fff}
+
+.admin-check-list{padding:6px}
+.admin-check-row{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #eef2f7;transition:background .12s}
+.admin-check-row:last-child{border-bottom:0}
+.admin-check-row:hover{background:#f8fbff}
+.admin-check-row__thumbs{display:flex;gap:4px;flex:none}
+.admin-check-row__thumbs img{width:54px;height:36px;object-fit:cover;border-radius:6px;border:1px solid #e2e9f1;background:#f4f7fb}
+.admin-check-row__body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.admin-check-row__body b{font:700 14px Manrope;color:#1d3351}
+.admin-check-row__body small{font-size:11.5px;color:#8494a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-check-row__amount{font:800 17px Manrope;color:#0a1f3a;flex:none}
+.admin-check-row__chevron{color:#b8c4d2;font-size:22px;flex:none}
+
+.check-images--admin figure{margin:0;text-align:center}
+.check-images--admin figure img{width:100%;border-radius:10px;border:1px solid var(--line);aspect-ratio:1.85;object-fit:cover;background:#f4f7fb}
+.check-images--admin figcaption{margin-top:8px;font-size:11.5px;font-weight:700;color:#7d8b9d;text-transform:uppercase;letter-spacing:.6px}
+
+.check-review-form{padding:8px 24px 24px;display:flex;flex-direction:column;gap:12px}
+.check-review-form>label{font-size:11px;font-weight:700;color:#3c4c61;text-transform:uppercase;letter-spacing:.5px;display:flex;flex-direction:column;gap:6px}
+.check-review-form textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-size:13.5px;font-family:inherit;resize:vertical;min-height:74px}
+.check-review-form textarea:focus{outline:none;border-color:#1468e5;box-shadow:0 0 0 3px rgba(20,104,229,.12)}
+.check-review-actions{display:flex;gap:10px}
+.check-review-actions .btn{flex:1}
+.btn-success{background:linear-gradient(120deg,#0f9d58,#15a36a);color:#fff;box-shadow:0 6px 16px rgba(21,163,106,.28)}
+.btn-success:hover{filter:brightness(1.06)}
+.btn-danger{background:linear-gradient(120deg,#c0392b,#e64b5d);color:#fff;box-shadow:0 6px 16px rgba(230,75,93,.28)}
+.btn-danger:hover{filter:brightness(1.06)}
+
+@media(max-width:1050px){
+  .deposit-kpis{grid-template-columns:1fr 1fr}
+  .deposit-kpi--info{grid-column:1/-1}
+  .deposit-grid{grid-template-columns:1fr}
+  .check-images{grid-template-columns:1fr}
+  .check-images--admin{grid-template-columns:1fr 1fr}
+}
+@media(max-width:680px){
+  .deposit-kpis{grid-template-columns:1fr}
+  .check-photos{grid-template-columns:1fr}
+  .check-images--admin{grid-template-columns:1fr}
+  .admin-check-row__thumbs{display:none}
+}

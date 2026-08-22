@@ -351,7 +351,7 @@ class Bank_model extends CI_Model
         $metrics['transactions_today'] = $this->db->where('DATE(created_at)',date('Y-m-d'))->count_all_results('transactions');
         $metrics['pending'] = $this->db->where('status','pending')->count_all_results('transfers');
         $metrics['scheduled'] = $this->db->where('status','pending')->where('scheduled_for >',date('Y-m-d'))->count_all_results('transfers');
-        $metrics['pending_deposits'] = $this->db->where('status','pending')->where('type','credit')->count_all_results('transactions');
+        $metrics['pending_deposits'] = $this->db->where('status','pending')->count_all_results('check_deposits');
         $metrics['cards'] = $this->db->count_all_results('cards');
         $metrics['active_loans'] = $this->db->where('status','active')->count_all_results('loans');
         return $metrics;
@@ -839,6 +839,119 @@ class Bank_model extends CI_Model
         $this->db->insert('transactions',array('account_id'=>$to['id'],'reference'=>$ref.'-C','type'=>'credit','category'=>'Currency exchange','description'=>'Exchanged from '.$from['currency'],'amount'=>$converted,'currency'=>$to['currency'],'balance_after'=>(float)$to['available_balance']+$converted,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
         $this->db->trans_complete();
         return $this->db->trans_status()?array(TRUE,array('reference'=>$ref,'rate'=>$rate,'converted'=>$converted,'from_currency'=>$from['currency'],'to_currency'=>$to['currency'])):array(FALSE,'The exchange could not be completed.');
+    }
+
+    /* -------------------- Mobile Check Deposits -------------------- */
+
+    public function check_deposits_for_user($user_id, $limit = 50)
+    {
+        return $this->db->select('cd.*, a.account_number, a.name account_name')
+            ->from('check_deposits cd')
+            ->join('accounts a', 'a.id = cd.account_id')
+            ->where('cd.user_id', (int)$user_id)
+            ->order_by('cd.created_at', 'DESC')
+            ->limit((int)$limit)
+            ->get()->result_array();
+    }
+
+    public function check_deposit($id, $user_id = NULL)
+    {
+        $this->db->select('cd.*, a.account_number, a.name account_name, a.currency')
+            ->from('check_deposits cd')
+            ->join('accounts a', 'a.id = cd.account_id')
+            ->where('cd.id', (int)$id);
+        if ($user_id !== NULL) $this->db->where('cd.user_id', (int)$user_id);
+        return $this->db->get()->row_array();
+    }
+
+    public function all_check_deposits($status = NULL, $limit = 100, $offset = 0)
+    {
+        $this->db->select('cd.*, u.first_name, u.last_name, u.email, a.account_number, a.name account_name')
+            ->from('check_deposits cd')
+            ->join('users u', 'u.id = cd.user_id')
+            ->join('accounts a', 'a.id = cd.account_id');
+        if ($status) $this->db->where('cd.status', $status);
+        return $this->db->order_by('cd.created_at', 'DESC')
+            ->limit((int)$limit, (int)$offset)
+            ->get()->result_array();
+    }
+
+    public function count_check_deposits($status = NULL)
+    {
+        if ($status) $this->db->where('status', $status);
+        return (int) $this->db->count_all_results('check_deposits');
+    }
+
+    public function create_check_deposit($user_id, $account_id, $amount, $front_path, $back_path, $check_number = NULL)
+    {
+        $account = $this->account((int)$account_id, (int)$user_id);
+        if (!$account || $account['status'] !== 'active') return array(FALSE, 'The selected account is unavailable.');
+        $amount = round((float)$amount, 2);
+        if ($amount <= 0) return array(FALSE, 'Enter a valid deposit amount.');
+        $daily_limit = 25000;
+        $today_start = date('Y-m-d 00:00:00');
+        $today_total = (float) $this->db->select_sum('amount', 'total')
+            ->where('user_id', (int)$user_id)->where('created_at >=', $today_start)
+            ->get('check_deposits')->row()->total;
+        if ($today_total + $amount > $daily_limit) {
+            return array(FALSE, 'This deposit would exceed your daily mobile deposit limit of '.money($daily_limit, $account['currency']).'.');
+        }
+        $reference = 'MCD-'.date('ymd').'-'.random_int(100000, 999999);
+        $now = date('Y-m-d H:i:s');
+        $this->db->insert('check_deposits', array(
+            'user_id' => (int)$user_id, 'account_id' => (int)$account_id, 'reference' => $reference,
+            'amount' => $amount, 'check_number' => $check_number ?: NULL,
+            'front_image_path' => $front_path, 'back_image_path' => $back_path,
+            'status' => 'pending', 'created_at' => $now, 'updated_at' => $now,
+        ));
+        $id = $this->db->insert_id();
+        try { $this->add_notification((int)$user_id, 'deposit', 'Check deposit submitted', 'Your deposit of '.money($amount, $account['currency']).' ('.$reference.') is pending review.', 'deposits'); } catch (Exception $e) {}
+        return array(TRUE, $reference);
+    }
+
+    public function review_check_deposit($id, $approve, $note = NULL)
+    {
+        $deposit = $this->check_deposit($id);
+        if (!$deposit) return array(FALSE, 'Deposit not found.');
+        if ($deposit['status'] !== 'pending') return array(FALSE, 'This deposit has already been reviewed.');
+
+        $status = $approve ? 'approved' : 'rejected';
+        $this->db->trans_start();
+        $transaction_id = NULL;
+        if ($approve) {
+            $account = $this->account((int)$deposit['account_id'], (int)$deposit['user_id']);
+            if (!$account || $account['status'] !== 'active') {
+                $this->db->trans_complete();
+                return array(FALSE, 'The destination account is no longer active.');
+            }
+            $reference = $deposit['reference'];
+            $now = date('Y-m-d H:i:s');
+            $this->db->where('id', $account['id'])
+                ->set('balance', 'balance+'.$deposit['amount'], FALSE)
+                ->set('available_balance', 'available_balance+'.$deposit['amount'], FALSE)
+                ->update('accounts');
+            $this->db->insert('transactions', array(
+                'account_id' => $account['id'], 'reference' => $reference,
+                'type' => 'credit', 'category' => 'Check deposit',
+                'description' => 'Mobile check deposit'.($deposit['check_number'] ? ' #'.$deposit['check_number'] : ''),
+                'amount' => $deposit['amount'], 'currency' => $account['currency'],
+                'balance_after' => (float)$account['available_balance'] + (float)$deposit['amount'],
+                'status' => 'completed', 'transaction_date' => date('Y-m-d'), 'created_at' => $now,
+            ));
+            $transaction_id = $this->db->insert_id();
+        }
+        $this->db->where('id', $deposit['id'])->update('check_deposits', array(
+            'status' => $status, 'review_note' => $note,
+            'transaction_id' => $transaction_id, 'updated_at' => date('Y-m-d H:i:s'),
+        ));
+        $this->db->trans_complete();
+        if (!$this->db->trans_status()) return array(FALSE, 'Unable to process this review.');
+
+        $msg = $approve
+            ? 'Check deposit '.$deposit['reference'].' approved and credited to your account.'
+            : 'Check deposit '.$deposit['reference'].' was rejected. '.(string)$note;
+        try { $this->add_notification((int)$deposit['user_id'], 'deposit', $approve ? 'Deposit approved' : 'Deposit rejected', $msg, 'deposits'); } catch (Exception $e) {}
+        return array(TRUE, $status);
     }
 
     /* -------------------- Savings Goals -------------------- */
