@@ -1294,6 +1294,105 @@ class Bank_model extends CI_Model
         return array(TRUE, $status);
     }
 
+<<<<<<< HEAD
+=======
+    /* -------------------- KYC documents -------------------- */
+
+    public function kyc_documents($user_id)
+    {
+        return $this->db->where('user_id', (int)$user_id)
+            ->order_by('created_at', 'DESC')->get('kyc_documents')->result_array();
+    }
+
+    public function kyc_document($id, $user_id = NULL)
+    {
+        $this->db->where('id', (int)$id);
+        if ($user_id !== NULL) $this->db->where('user_id', (int)$user_id);
+        return $this->db->get('kyc_documents')->row_array();
+    }
+
+    public function all_kyc_documents($status = NULL, $limit = 100, $offset = 0)
+    {
+        $this->db->select('kd.*, u.first_name, u.last_name, u.email')
+            ->from('kyc_documents kd')->join('users u', 'u.id = kd.user_id');
+        if ($status) $this->db->where('kd.status', $status);
+        return $this->db->order_by('kd.created_at', 'DESC')
+            ->limit((int)$limit, (int)$offset)->get()->result_array();
+    }
+
+    public function count_kyc_documents($status = NULL)
+    {
+        if ($status) $this->db->where('status', $status);
+        return (int) $this->db->count_all_results('kyc_documents');
+    }
+
+    public function add_kyc_document($user_id, $data)
+    {
+        $allowed = array('passport','drivers_license','national_id','proof_of_address','selfie','other');
+        $type = in_array($data['doc_type'], $allowed, TRUE) ? $data['doc_type'] : 'other';
+        $now = date('Y-m-d H:i:s');
+        $this->db->insert('kyc_documents', array(
+            'user_id' => (int)$user_id,
+            'doc_type' => $type,
+            'file_path' => $data['file_path'],
+            'original_name' => $data['original_name'] ?? NULL,
+            'mime_type' => $data['mime_type'] ?? NULL,
+            'file_size' => isset($data['file_size']) ? (int)$data['file_size'] : NULL,
+            'status' => 'pending',
+            'created_at' => $now,
+        ));
+        $id = $this->db->insert_id();
+        // Flip the customer's profile back to pending when new docs arrive.
+        $this->db->where('user_id', (int)$user_id)->update('customer_profiles', array('kyc_status' => 'pending', 'updated_at' => $now));
+        return $id;
+    }
+
+    public function delete_kyc_document($id, $user_id)
+    {
+        $doc = $this->kyc_document($id, $user_id);
+        if (!$doc) return FALSE;
+        if ($doc['status'] !== 'pending') return FALSE; // can't remove reviewed docs
+        $this->db->where(array('id' => $id, 'user_id' => (int)$user_id))->delete('kyc_documents');
+        return $doc;
+    }
+
+    public function review_kyc_document($id, $approve, $note, $reviewer_id)
+    {
+        $doc = $this->kyc_document($id);
+        if (!$doc) return array(FALSE, 'Document not found.');
+        if ($doc['status'] !== 'pending') return array(FALSE, 'This document has already been reviewed.');
+        $status = $approve ? 'approved' : 'rejected';
+        $this->db->where('id', $id)->update('kyc_documents', array(
+            'status' => $status, 'review_note' => $note,
+            'reviewed_by' => (int)$reviewer_id, 'reviewed_at' => date('Y-m-d H:i:s'),
+        ));
+        // If approved and no other pending/rejected required docs, verify the customer.
+        if ($approve) {
+            $remaining = $this->db->where('user_id', $doc['user_id'])
+                ->where_in('status', array('pending','rejected'))->count_all_results('kyc_documents');
+            if ($remaining == 0) {
+                $this->update_kyc_status($doc['user_id'], 'verified');
+            }
+            $msg = 'Your identity document was approved'.($remaining == 0 ? ' and your identity is now verified.' : '.');
+        } else {
+            $this->update_kyc_status($doc['user_id'], 'rejected');
+            $msg = 'One of your identity documents was rejected'.($note ? ': '.$note : '.').' Please upload a replacement.';
+        }
+        try { $this->add_notification((int)$doc['user_id'], 'security',
+            $approve ? 'ID approved' : 'Action needed on your ID',
+            $msg, 'settings'); } catch (Exception $e) {}
+        return array(TRUE, $status);
+    }
+
+    public function kyc_document_counts_by_status()
+    {
+        $rows = $this->db->select('status, COUNT(*) c')->group_by('status')->get('kyc_documents')->result_array();
+        $out = array('pending' => 0, 'approved' => 0, 'rejected' => 0);
+        foreach ($rows as $r) $out[$r['status']] = (int)$r['c'];
+        return $out;
+    }
+
+>>>>>>> 8cd6fd1 (Complete KYC document upload with admin review)
     /* -------------------- Savings Goals -------------------- */
 
     public function goals($user_id)

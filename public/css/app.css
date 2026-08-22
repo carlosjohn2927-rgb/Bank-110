@@ -1226,8 +1226,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .statement-card__dl{width:32px;height:32px;border-radius:50%;background:#1468e5;color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
 @media(max-width:680px){.statement-accounts{grid-template-columns:1fr}.statement-month{padding:16px 18px}}
 
-/* ============================================================
-   ADMIN DASHBOARD — range selector + SVG charts
+/* =====================================================   ADMIN DASHBOARD — range selector + SVG charts
    ============================================================ */
 .dash-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .range-select{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px}
@@ -1262,3 +1261,62 @@ body.dash-loading .svg-chart-wrap{opacity:.5;pointer-events:none}
   .cat-bar{grid-template-columns:90px 1fr 70px 24px}
   .dash-head .btn{flex:1}
 }
+
+/* =====================================================   KYC DOCUMENT UPLOAD
+   ============================================================ */
+.kyc-grid{grid-template-columns:1fr 1fr}
+.kyc-upload{padding:22px 24px 26px;display:flex;flex-direction:column;gap:14px}
+.kyc-upload>label{font-size:11px;font-weight:800;color:#3c4c61;text-transform:uppercase;letter-spacing:.5px;display:flex;flex-direction:column;gap:6px}
+.kyc-upload select{height:44px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:14px;background:#fff;font-weight:500}
+.kyc-drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:170px;border:2px dashed #cdd9e8;border-radius:13px;background:#f7faff;cursor:pointer;text-align:center;padding:24px;transition:.15s}
+.kyc-drop:hover,.kyc-drop.drag{border-color:#1468e5;background:#eef5ff}
+.kyc-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.kyc-drop__icon{font-size:36px}
+.kyc-drop b{font:700 15px Manrope;color:#1d3351}
+.kyc-drop small{font-size:12px;color:#7a8a9d}
+.kyc-drop__file{margin-top:8px;font-size:12.5px;font-weight:700;color:#1468e5;word-break:break-all}
+.kyc-tips{background:#f4f8fd;border:1px solid #dce8f6;border-radius:10px;padding:14px 16px}
+.kyc-tips b{font-size:12.5px;color:#0d4f95;display:block;margin-bottom:6px}
+.kyc-tips ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.kyc-tips li{font-size:12px;color:#4a5a70;line-height:1.45}
+
+.kyc-docs{padding:8px}
+.kyc-doc{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid #eef2f7}
+.kyc-doc:last-child{border-bottom:0}
+.kyc-doc__thumb{width:52px;height:52px;border-radius:9px;overflow:hidden;background:#f4f7fb;border:1px solid var(--line);display:grid;place-items:center;flex:none;text-decoration:none}
+.kyc-doc__thumb img{width:100%;height:100%;object-fit:cover}
+.kyc-doc__pdf{font-size:24px}
+.kyc-doc__body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.kyc-doc__body b{font:700 14px Manrope;color:#1d3351}
+.kyc-doc__body small{font-size:11.5px;color:#8494a8}
+.kyc-doc__note{color:#b7791f!important;font-weight:600}
+.kyc-doc__status{font-size:10.5px;font-weight:800;padding:4px 10px;border-radius:999px;text-transform:uppercase}
+.kyc-doc--pending .kyc-doc__status{background:#fff6e3;color:#b7791f}
+.kyc-doc--approved .kyc-doc__status{background:#e7f8f1;color:#15a36a}
+.kyc-doc--rejected .kyc-doc__status{background:#fff0f2;color:#c33d4d}
+.kyc-doc__del{width:30px;height:30px;border-radius:8px;border:1px solid #eef2f7;background:#fff;color:#9aa8b8;font-size:18px;line-height:1;cursor:pointer}
+.kyc-doc__del:hover{background:#fff0f2;color:#c33d4d;border-color:#ffd7dc}
+
+/* Admin KYC */
+.admin-kyc-list{padding:6px}
+.admin-kyc-row{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid #eef2f7;text-decoration:none;color:inherit;transition:background .12s}
+.admin-kyc-row:hover{background:#f8fbff}
+.admin-kyc-row__thumb{width:54px;height:40px;object-fit:cover;border-radius:6px;border:1px solid #e2e9f1;background:#f4f7fb;overflow:hidden;display:grid;place-items:center;flex:none;font-size:20px}
+.admin-kyc-row__thumb img{width:100%;height:100%;object-fit:cover}
+.admin-kyc-row__body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.admin-kyc-row__body b{font:700 14px Manrope;color:#1d3351}
+.admin-kyc-row__body small{font-size:11.5px;color:#8494a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-kyc-row__body small.note{color:#b7791f;font-weight:600}
+
+.kyc-preview{padding:22px 24px}
+.kyc-preview img{width:100%;border-radius:10px;border:1px solid var(--line);background:#f4f7fb}
+.kyc-pdf{text-align:center;padding:40px 20px;background:#f7faff;border-radius:12px;border:1px dashed #cdd9e8}
+.kyc-pdf span{font-size:48px;display:block;margin-bottom:10px}
+.kyc-pdf p{color:#5a6a80;margin:0 0 16px}
+
+.kyc-badge{display:inline-flex;padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:800;text-transform:uppercase}
+.kyc-badge--pending{background:#fff6e3;color:#b7791f}
+.kyc-badge--verified{background:#e7f8f1;color:#15a36a}
+.kyc-badge--rejected{background:#fff0f2;color:#c33d4d}
+
+@media(max-width:900px){.kyc-grid{grid-template-columns:1fr}}

@@ -169,6 +169,17 @@ CREATE TABLE IF NOT EXISTS check_deposits (
  CONSTRAINT fk_check_deposit_account FOREIGN KEY(account_id) REFERENCES accounts(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- KYC identity documents (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS kyc_documents (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL,
+ doc_type ENUM('passport','drivers_license','national_id','proof_of_address','selfie','other') NOT NULL,
+ file_path VARCHAR(255) NOT NULL, original_name VARCHAR(255) NULL, mime_type VARCHAR(80) NULL, file_size INT UNSIGNED NULL,
+ status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending', review_note VARCHAR(255) NULL,
+ reviewed_by BIGINT UNSIGNED NULL, reviewed_at DATETIME NULL, created_at DATETIME NOT NULL,
+ INDEX idx_kyc_user(user_id), INDEX idx_kyc_status(status),
+ CONSTRAINT fk_kyc_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET NAMES utf8mb4;
 
 -- Add recipient_routing column to transfers if missing (safe for existing installs).

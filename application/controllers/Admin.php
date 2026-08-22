@@ -37,6 +37,29 @@ class Admin extends MY_Controller {
  public function customers(){$q=$this->input->get('q',TRUE);$per_page=25;$total=$this->Bank_model->count_customers($q);$this->load->library('pagination');$this->config->load('pagination_custom',TRUE);$cfg=$this->config->item('pagination_custom')?:array();$cfg['base_url']=site_url('admin/customers');$cfg['total_rows']=$total;$cfg['per_page']=$per_page;$cfg['reuse_query_string']=TRUE;$cfg['first_url']=$cfg['base_url'];$this->pagination->initialize($cfg);$page=$this->input->get('page');$offset=((int)max(1,$page)-1)*$per_page;$this->page('customers',array('title'=>'Customers','customers'=>$this->Bank_model->customers($per_page,$q,$offset),'q'=>$q,'pagination'=>$this->pagination->create_links()));}
  public function customer($id){$customer=$this->Bank_model->customer_detail((int)$id);if(!$customer)show_404();$this->page('customer_detail',array('title'=>$customer['first_name'].' '.$customer['last_name'],'customer'=>$customer));}
  public function kyc($id){if($this->input->method()!=='post')show_404();$status=$this->input->post('kyc_status',TRUE);if($this->Bank_model->update_kyc_status((int)$id,$status)){$this->Bank_model->audit('kyc_updated','Customer #'.$id.' KYC set to '.$status,$this->user['id']);$this->session->set_flashdata('success','KYC status updated.');}else $this->session->set_flashdata('error','Invalid KYC status.');redirect('admin/customers/'.$id);}
+ public function kyc_documents(){
+  $status=$this->input->get('status',TRUE)?:'pending';
+  $per_page=25;$total=$this->Bank_model->count_kyc_documents($status);
+  $this->load->library('pagination');$this->config->load('pagination_custom',TRUE);
+  $cfg=$this->config->item('pagination_custom')?:array();
+  $cfg['base_url']=site_url('admin/kyc-documents');$cfg['total_rows']=$total;$cfg['per_page']=$per_page;$cfg['reuse_query_string']=TRUE;$cfg['first_url']=$cfg['base_url'];
+  $this->pagination->initialize($cfg);
+  $page=max(1,(int)$this->input->get('page'));$offset=($page-1)*$per_page;
+  $this->page('kyc_documents',array('title'=>'KYC review','documents'=>$this->Bank_model->all_kyc_documents($status,$per_page,$offset),'status'=>$status,'counts'=>$this->Bank_model->kyc_document_counts_by_status(),'pagination'=>$this->pagination->create_links()));
+ }
+ public function kyc_document($id){
+  $doc=$this->Bank_model->kyc_document((int)$id);if(!$doc)show_404();
+  $this->page('kyc_document',array('title'=>'Review document','doc'=>$doc));
+ }
+ public function kyc_review($id){
+  if($this->input->method()!=='post')show_404();
+  $approve=$this->input->post('action')==='approve';
+  $note=$this->input->post('note',TRUE);
+  list($ok,$msg)=$this->Bank_model->review_kyc_document((int)$id,$approve,$note,$this->user['id']);
+  if($ok){$this->Bank_model->audit('kyc_document_'.$approve?'approved':'rejected','KYC document #'.$id.' '.$msg,$this->user['id']);$this->session->set_flashdata('success','Document '.$msg.'.');}
+  else $this->session->set_flashdata('error',$msg);
+  redirect('admin/kyc-documents');
+ }
  public function account_status($id){if($this->input->method()!=='post')show_404();$status=$this->input->post('status',TRUE);list($ok,$m)=$this->Bank_model->admin_update_account_status((int)$id,$status);if($ok){$this->Bank_model->audit('account_status','Account #'.$id.' set to '.$m,$this->user['id']);$this->session->set_flashdata('success','Account is now '.$m.'.');}else $this->session->set_flashdata('error',$m);redirect($this->input->server('HTTP_REFERER') ?: 'admin/customers');}
  public function customer_create(){
   if($this->input->method()==='post'){

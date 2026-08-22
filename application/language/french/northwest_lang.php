@@ -16,6 +16,7 @@ $lang['nav_goals']         = 'Objectifs d\'épargne';
 $lang['nav_budget']        = 'Budget';
 $lang['nav_support']       = 'Assistance';
 $lang['nav_settings']      = 'Paramètres';
+$lang['nav_kyc']           = 'Vérifier identité';
 $lang['nav_sign_out']      = 'Se déconnecter';
 $lang['nav_personal']      = 'Banque personnelle';
 $lang['nav_secure']        = 'Session sécurisée';
