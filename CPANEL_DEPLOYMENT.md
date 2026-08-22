@@ -5,7 +5,7 @@ This package is designed for deployment without Terminal, SSH, Composer, Node.js
 ## What you need
 
 - A cPanel account with **File Manager**, **MySQL Databases**, and **phpMyAdmin**
-- PHP 7.4 or newer with `mysqli`, `mbstring`, `openssl`, `fileinfo`, and `session`
+- PHP 8.2 or newer with `mysqli`, `mbstring`, `openssl`, `fileinfo`, and `session`
 - A domain or subdomain pointed at the folder where the package will be extracted
 
 ## New cPanel deployment
@@ -134,7 +134,7 @@ Use File Manager to verify the writable folders listed above and change only the
 
 ### Server error immediately after extraction
 
-In cPanel **MultiPHP Manager**, select PHP 7.4 or newer. In **Select PHP Version**, enable `mysqli`, `mbstring`, `openssl`, `fileinfo`, and `session`. Check cPanel's **Errors** page or `assets/logs` for details.
+In cPanel **MultiPHP Manager**, select PHP 8.2 or newer. In **Select PHP Version**, enable `mysqli`, `mbstring`, `openssl`, `fileinfo`, and `session`. Check cPanel's **Errors** page or `assets/logs` for details.
 
 ## Complete normal deployment workflow
 
