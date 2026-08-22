@@ -113,6 +113,14 @@ CREATE TABLE IF NOT EXISTS exchange_rates (
  updated_at DATETIME NOT NULL, UNIQUE KEY uq_pair(from_currency,to_currency)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Daily snapshot history for exchange-rate charts (new in 2026.08 release)
+CREATE TABLE IF NOT EXISTS exchange_rate_history (
+ id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, from_currency CHAR(3) NOT NULL, to_currency CHAR(3) NOT NULL,
+ rate DECIMAL(20,10) NOT NULL, snapshot_date DATE NOT NULL, created_at DATETIME NOT NULL,
+ UNIQUE KEY uq_hist_pair_date(from_currency,to_currency,snapshot_date),
+ INDEX idx_hist_pair(from_currency,to_currency,snapshot_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS password_resets (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, token VARCHAR(64) NOT NULL UNIQUE, expires_at DATETIME NOT NULL, used TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
  INDEX idx_reset_user(user_id), INDEX idx_reset_token(token), CONSTRAINT fk_reset_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE

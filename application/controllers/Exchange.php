@@ -15,6 +15,68 @@ class Exchange extends MY_Controller {
    redirect('exchange');
   }
   $accounts=$this->Bank_model->accounts($this->user['id']);
-  $this->render('customer/exchange',array('title'=>'Currency exchange','accounts'=>$accounts,'rates'=>$this->Bank_model->exchange_rates()));
+  $this->render('customer/exchange',array(
+   'title'=>'Currency exchange',
+   'accounts'=>$accounts,
+   'rates'=>$this->Bank_model->exchange_rates(),
+   'history'=>$this->rate_history_for_first_pair(),
+  ));
+ }
+
+ /**
+  * AJAX endpoint returning 30-day history for a currency pair.
+  * GET /exchange/history?from=USD&to=EUR&days=30  → {labels:[...], rates:[...]}
+  */
+ public function history(){
+  $from=strtoupper(substr((string)$this->input->get('from',TRUE),0,3));
+  $to=strtoupper(substr((string)$this->input->get('to',TRUE),0,3));
+  $days=min(365,max(7,(int)$this->input->get('days')?:30));
+  if(!preg_match('/^[A-Z]{3}$/',$from)||!preg_match('/^[A-Z]{3}$/',$to)){
+    return $this->json(array('ok'=>FALSE,'error'=>'Invalid currency pair.'),422);
+  }
+  if($from===$to)return $this->json(array('ok'=>TRUE,'labels'=>array(),'rates'=>array(),'current'=>1.0));
+  $rows=$this->Bank_model->exchange_rate_history($from,$to,$days);
+  $current=$this->Bank_model->exchange_rate($from,$to);
+  if($current===NULL)$current=end($rows)['rate']??NULL;
+  return $this->json(array(
+   'ok'=>TRUE,
+   'pair'=>$from.'/'.$to,
+   'current'=>$current!==NULL?(float)$current:NULL,
+   'days'=>$days,
+   'labels'=>array_map(function($r){return date('M j',strtotime($r['date']));},$rows),
+   'rates'=>array_map(function($r){return (float)$r['rate'];},$rows),
+  ));
+ }
+
+ /**
+  * AJAX quick-convert endpoint used by the public calculator and the
+  * in-app converter. Returns the current rate + converted amount.
+  */
+ public function convert(){
+  $from=strtoupper(substr((string)$this->input->get('from',TRUE),0,3));
+  $to=strtoupper(substr((string)$this->input->get('to',TRUE),0,3));
+  $amount=round((float)$this->input->get('amount'),2);
+  if(!preg_match('/^[A-Z]{3}$/',$from)||!preg_match('/^[A-Z]{3}$/',$to)){
+    return $this->json(array('ok'=>FALSE,'error'=>'Invalid currency pair.'),422);
+  }
+  $rate=$this->Bank_model->exchange_rate($from,$to);
+  if($rate===NULL||$rate<=0)return $this->json(array('ok'=>FALSE,'error'=>'No rate for '.$from.'/'.$to),404);
+  return $this->json(array(
+   'ok'=>TRUE,'from'=>$from,'to'=>$to,'rate'=>(float)$rate,
+   'amount'=>$amount,'converted'=>round($amount*$rate,2),
+  ));
+ }
+
+ /** First available currency pair for the initial chart render. */
+ private function rate_history_for_first_pair(){
+  $rates=$this->Bank_model->exchange_rates();
+  if(empty($rates))return array('from'=>'USD','to'=>'EUR','labels'=>array(),'rates'=>array());
+  $first=$rates[0];
+  $rows=$this->Bank_model->exchange_rate_history($first['from_currency'],$first['to_currency'],30);
+  return array(
+   'from'=>$first['from_currency'],'to'=>$first['to_currency'],
+   'labels'=>array_map(function($r){return date('M j',strtotime($r['date']));},$rows),
+   'rates'=>array_map(function($r){return (float)$r['rate'];},$rows),
+  );
  }
 }

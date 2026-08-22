@@ -968,3 +968,61 @@ dialog::backdrop{background:rgba(8,27,51,.45);backdrop-filter:blur(2px)}
   .check-images--admin{grid-template-columns:1fr}
   .admin-check-row__thumbs{display:none}
 }
+
+/* ============================================================
+   EXCHANGE — swap button, quick converter, 30-day SVG chart
+   ============================================================ */
+.exchange-grid{grid-template-columns:1.1fr .9fr}
+.fx-accounts{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end;margin-bottom:6px}
+.fx-accounts label{font-size:11px;font-weight:700;color:#3c4c61;text-transform:uppercase;letter-spacing:.5px;display:flex;flex-direction:column;gap:6px}
+.fx-accounts select{height:44px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:14px;background:#fff;font-weight:500}
+.fx-swap{width:42px;height:42px;border-radius:50%;border:1px solid #d4e5fb;background:#eef6ff;color:#1468e5;font-size:18px;display:grid;place-items:center;cursor:pointer;transition:.2s;align-self:end;margin-bottom:1px}
+.fx-swap:hover{background:#1468e5;color:#fff;transform:rotate(180deg)}
+.fx-amount-row{position:relative;display:flex;align-items:stretch;margin-top:6px}
+.fx-amount-row .fx-currency{background:#f1f5fa;border:1px solid var(--line);border-right:0;border-radius:9px 0 0 9px;padding:0 14px;display:flex;align-items:center;font-weight:800;color:#1d3351;font-size:14px;min-width:64px;justify-content:center}
+.fx-amount-row input{flex:1;height:48px;border:1px solid var(--line);border-radius:0 9px 9px 0;padding:0 14px;font-size:18px;font-weight:700;outline:none}
+.fx-amount-row input:focus{border-color:#1468e5;box-shadow:0 0 0 3px rgba(20,104,229,.12)}
+.fx-disclaimer{font-size:11px;color:#8494a6;text-align:center;margin:10px 0 0;line-height:1.5}
+button[disabled]{opacity:.55;cursor:not-allowed}
+
+.exchange-side{display:flex;flex-direction:column;gap:17px}
+.quick-convert .panel-head{height:auto;padding:18px 20px 12px}
+.quick-convert__body{padding:0 20px 20px;display:flex;flex-direction:column;gap:12px}
+.qc-row{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center}
+.qc-row select{height:42px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font-weight:700;font-size:14px;background:#fff}
+.qc-row input{height:42px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:15px;font-weight:600}
+.qc-row input[readonly]{background:#f4f8fd;font-weight:800;color:#0a1f3a}
+.qc-swap{align-self:center;width:36px;height:36px;border-radius:50%;border:1px solid #d4e5fb;background:#eef6ff;color:#1468e5;font-size:16px;cursor:pointer;transition:.2s}
+.qc-swap:hover{background:#1468e5;color:#fff}
+.qc-rate{text-align:center;font-size:13px;color:#1468e5;font-weight:700;background:#f4f8fd;border-radius:8px;padding:10px}
+
+.fx-chart-panel .panel-head{flex-wrap:wrap;gap:10px}
+.fx-chart-toggle{display:flex;gap:6px}
+.fx-chart-toggle .outline{padding:6px 12px;font-size:11px;font-weight:800;height:auto;border-radius:999px}
+.fx-chart-toggle .outline.is-active{background:#1468e5;color:#fff;border-color:#1468e5}
+.fx-chart-body{padding:14px 20px 6px}
+.fx-chart{width:100%;height:200px;display:block}
+.fx-chart-line{vector-effect:non-scaling-stroke;animation:fxdraw .8s ease}
+@keyframes fxdraw{from{stroke-dasharray:1000;stroke-dashoffset:1000}to{stroke-dasharray:0;stroke-dashoffset:0}}
+.fx-chart-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid #eef2f7}
+.fx-chart-stats div{display:flex;flex-direction:column;gap:3px}
+.fx-chart-stats small{font-size:10px;color:#8494a6;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.fx-chart-stats b{font:700 16px Manrope;color:#0a1f3a}
+.fx-chart-stats b.muted{color:#5a6a80}
+.fx-chart-stats b[style*="color: rgb(195, 61, 77)"]{color:#c33d4d!important}
+.fx-source{font-size:10px;color:#a0aec0;padding:0 20px 16px;margin:0}
+#fx-rates li{cursor:pointer;transition:background .12s}
+#fx-rates li:hover{background:#f4f8fd;border-radius:6px;padding-left:6px;padding-right:6px;margin-left:-6px;margin-right:-6px}
+#fx-rates li b{position:relative}
+#fx-rates li:hover b::after{content:'▸';position:absolute;right:-14px;color:#1468e5}
+
+@media(max-width:1050px){
+  .exchange-grid{grid-template-columns:1fr}
+  .fx-accounts{grid-template-columns:1fr auto 1fr}
+}
+@media(max-width:560px){
+  .fx-accounts{grid-template-columns:1fr;text-align:left}
+  .fx-swap{justify-self:center;transform:rotate(90deg)}
+  .fx-swap:hover{transform:rotate(270deg)}
+  .fx-chart-stats{grid-template-columns:1fr 1fr}
+}

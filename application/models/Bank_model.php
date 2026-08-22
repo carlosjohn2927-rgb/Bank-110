@@ -815,7 +815,79 @@ class Bank_model extends CI_Model
     {
         $rate=round((float)$rate,10);
         if($rate<=0)return FALSE;
-        return $this->db->replace('exchange_rates',array('from_currency'=>$from,'to_currency'=>$to,'rate'=>$rate,'updated_at'=>date('Y-m-d H:i:s')));
+        $ok=$this->db->replace('exchange_rates',array('from_currency'=>$from,'to_currency'=>$to,'rate'=>$rate,'updated_at'=>date('Y-m-d H:i:s')));
+        // Record a daily historical snapshot for the rate chart.
+        if($ok)$this->record_rate_history($from,$to,$rate);
+        return $ok;
+    }
+
+    /**
+     * Insert/update today's historical snapshot for a currency pair.
+     */
+    public function record_rate_history($from,$to,$rate)
+    {
+        $rate=round((float)$rate,10);
+        if($rate<=0)return FALSE;
+        $today=date('Y-m-d');
+        $existing=$this->db->where(array('from_currency'=>$from,'to_currency'=>$to,'snapshot_date'=>$today))->get('exchange_rate_history')->row_array();
+        if($existing){
+            return $this->db->where('id',$existing['id'])->update('exchange_rate_history',array('rate'=>$rate));
+        }
+        return $this->db->insert('exchange_rate_history',array(
+            'from_currency'=>$from,'to_currency'=>$to,'rate'=>$rate,
+            'snapshot_date'=>$today,'created_at'=>date('Y-m-d H:i:s')
+        ));
+    }
+
+    /**
+     * Daily rate history for a pair over the last $days days, oldest-first.
+     * Backfills any missing days (including today) from the current rate so the
+     * chart always renders a continuous line.
+     */
+    public function exchange_rate_history($from,$to,$days=30)
+    {
+        $days=(int)$days; if($days<2)$days=30;
+        $since=date('Y-m-d',strtotime('-'.($days-1).' days'));
+        $rows=$this->db->where(array('from_currency'=>$from,'to_currency'=>$to))
+            ->where('snapshot_date >=',$since)
+            ->order_by('snapshot_date','ASC')
+            ->get('exchange_rate_history')->result_array();
+        $by_date=array();
+        foreach($rows as $r)$by_date[$r['snapshot_date']]=(float)$r['rate'];
+
+        // Determine a seed rate: prefer the most recent historical value, else
+        // fall back to the live exchange_rates table, else inverse pair.
+        $seed=NULL;
+        if(!empty($by_date)){$seed=end($by_date);reset($by_date);}
+        else{$seed=$this->exchange_rate($from,$to);}
+        if($seed===NULL)$seed=1.0;
+
+        $out=array();
+        for($i=$days-1;$i>=0;$i--){
+            $d=date('Y-m-d',strtotime("-{$i} days"));
+            if(isset($by_date[$d])){
+                $seed=(float)$by_date[$d];
+            }else{
+                // Persist the seed for this missing day so future requests find it.
+                $this->record_rate_history($from,$to,$seed);
+            }
+            $out[]=array('date'=>$d,'rate'=>$seed);
+        }
+        return $out;
+    }
+
+    /**
+     * Snapshot every live currency pair once per day. Called by the scheduler.
+     * Returns how many pairs were recorded.
+     */
+    public function snapshot_exchange_rates()
+    {
+        $rates=$this->exchange_rates();
+        $n=0;
+        foreach($rates as $r){
+            if($this->record_rate_history($r['from_currency'],$r['to_currency'],$r['rate']))$n++;
+        }
+        return $n;
     }
 
     public function exchange_convert($user_id,$from_account_id,$to_account_id,$amount)
