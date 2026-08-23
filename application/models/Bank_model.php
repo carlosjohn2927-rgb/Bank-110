@@ -5,20 +5,69 @@ class Bank_model extends CI_Model
 {
     public function authenticate($identity, $password, $role)
     {
-        if ($role === 'customer') {
-            $this->db->select('u.*')->from('users u')->join('accounts a', 'a.user_id=u.id', 'left');
-            $this->db->group_start()->where('u.email', $identity)->or_where('u.username', $identity)->or_where('a.account_number', $identity)->group_end();
-            $user = $this->db->where('u.role', $role)->where('u.status', 'active')->limit(1)->get()->row_array();
-        } else {
-            $this->db->group_start()->where('email', $identity)->or_where('username', $identity)->group_end();
-            $user = $this->db->where('role', $role)->where('status', 'active')->get('users')->row_array();
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            if ($role === 'customer') {
+                $this->db->select('u.*')->from('users u')->join('accounts a', 'a.user_id=u.id', 'left');
+                $this->db->group_start()->where('u.email', $identity)->or_where('u.username', $identity)->or_where('a.account_number', $identity)->group_end();
+                $q = $this->db->where('u.role', $role)->where('u.status', 'active')->limit(1)->get();
+                $user = ($q !== FALSE) ? $q->row_array() : NULL;
+            } else {
+                $this->db->group_start()->where('email', $identity)->or_where('username', $identity)->group_end();
+                $q = $this->db->where('role', $role)->where('status', 'active')->get('users');
+                $user = ($q !== FALSE) ? $q->row_array() : NULL;
+            }
+            $this->db->db_debug = $prev;
+            return ($user && isset($user['password_hash']) && password_verify($password, $user['password_hash'])) ? $user : NULL;
+        } catch (\Throwable $e) {
+            log_message('error', 'authenticate failed: '.$e->getMessage());
+            return NULL;
         }
-        return ($user && password_verify($password, $user['password_hash'])) ? $user : NULL;
     }
 
     public function record_login($user_id)
     {
-        return $this->db->where('id', $user_id)->update('users', array('last_login_at' => date('Y-m-d H:i:s'), 'last_login_ip' => $this->input->ip_address()));
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $res = $this->db->where('id', $user_id)->update('users', array('last_login_at' => date('Y-m-d H:i:s'), 'last_login_ip' => $this->input->ip_address()));
+            $this->db->db_debug = $prev;
+            return $res;
+        } catch (\Throwable $e) {
+            log_message('error', 'record_login failed: '.$e->getMessage());
+            return FALSE;
+        }
+    }
+
+    /* ---- Safe query helpers to avoid HTTP 500 on missing tables / failed queries ---- */
+    private function _safe_get_row($table = NULL)
+    {
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $q = $table ? $this->db->get($table) : $this->db->get();
+            $this->db->db_debug = $prev;
+            if ($q === FALSE || !method_exists($q, 'row_array')) return NULL;
+            return $q->row_array();
+        } catch (\Throwable $e) {
+            log_message('error', '_safe_get_row failed: '.$e->getMessage());
+            return NULL;
+        }
+    }
+    private function _safe_get_result($table = NULL)
+    {
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $q = $table ? $this->db->get($table) : $this->db->get();
+            $this->db->db_debug = $prev;
+            if ($q === FALSE || !method_exists($q, 'result_array')) return array();
+            return $q->result_array();
+        } catch (\Throwable $e) {
+            log_message('error', '_safe_get_result failed: '.$e->getMessage());
+            return array();
+        }
     }
 
     public function accounts($user_id)
@@ -434,10 +483,19 @@ class Bank_model extends CI_Model
     /** Return a user without exposing the password hash to session callers. */
     public function user_by_id($id, $role = NULL)
     {
-        $this->db->select('id,username,email,first_name,last_name,role,status,last_login_at,last_login_ip,created_at,updated_at');
-        $this->db->where('id', (int) $id);
-        if ($role !== NULL) $this->db->where('role', $role);
-        return $this->db->get('users')->row_array();
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $this->db->select('id,username,email,first_name,last_name,role,status,last_login_at,last_login_ip,created_at,updated_at');
+            $this->db->where('id', (int) $id);
+            if ($role !== NULL) $this->db->where('role', $role);
+            $q = $this->db->get('users');
+            $this->db->db_debug = $prev;
+            return ($q !== FALSE) ? $q->row_array() : NULL;
+        } catch (\Throwable $e) {
+            log_message('error', 'user_by_id failed: '.$e->getMessage());
+            return NULL;
+        }
     }
 
     /** Check whether a login username is available, excluding one user when editing. */
@@ -868,8 +926,18 @@ class Bank_model extends CI_Model
 
     public function preferences($user_id)
     {
-        $rows=$this->db->select('pref_key,pref_value')->where('user_id',$user_id)->get('user_preferences')->result_array();
-        $out=array();foreach($rows as $r)$out[$r['pref_key']]=$r['pref_value'];return $out;
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $q = $this->db->select('pref_key,pref_value')->where('user_id',$user_id)->get('user_preferences');
+            $this->db->db_debug = $prev;
+            if ($q === FALSE) return array();
+            $rows = $q->result_array();
+            $out=array();foreach($rows as $r)$out[$r['pref_key']]=$r['pref_value'];return $out;
+        } catch (\Throwable $e) {
+            log_message('error', 'preferences failed: '.$e->getMessage());
+            return array();
+        }
     }
 
     public function set_preference($user_id,$key,$value)
@@ -1115,25 +1183,61 @@ class Bank_model extends CI_Model
 
     public function login_attempts($key, $window_seconds=900, $max=5)
     {
-        $cutoff=time()-$window_seconds;
-        // trim old rows
-        $this->db->where('created_at <',date('Y-m-d H:i:s',$cutoff))->delete('login_attempts');
-        return $this->db->where('attempt_key',$key)->where('created_at >=',date('Y-m-d H:i:s',$cutoff))->count_all_results('login_attempts');
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $cutoff=time()-$window_seconds;
+            // trim old rows
+            $this->db->where('created_at <',date('Y-m-d H:i:s',$cutoff))->delete('login_attempts');
+            $count = $this->db->where('attempt_key',$key)->where('created_at >=',date('Y-m-d H:i:s',$cutoff))->count_all_results('login_attempts');
+            $this->db->db_debug = $prev;
+            return is_int($count) ? $count : 0;
+        } catch (\Throwable $e) {
+            log_message('error', 'login_attempts failed: '.$e->getMessage());
+            return 0;
+        }
     }
 
     public function record_login_attempt($key,$success=FALSE)
     {
-        return $this->db->insert('login_attempts',array('attempt_key'=>$key,'success'=>$success?'1':'0','ip_address'=>$this->input->ip_address(),'created_at'=>date('Y-m-d H:i:s')));
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $res = $this->db->insert('login_attempts',array('attempt_key'=>$key,'success'=>$success?'1':'0','ip_address'=>$this->input->ip_address(),'created_at'=>date('Y-m-d H:i:s')));
+            $this->db->db_debug = $prev;
+            return $res;
+        } catch (\Throwable $e) {
+            log_message('error', 'record_login_attempt failed: '.$e->getMessage());
+            return FALSE;
+        }
     }
 
     public function clear_login_attempts($key)
     {
-        return $this->db->where('attempt_key',$key)->delete('login_attempts');
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $res = $this->db->where('attempt_key',$key)->delete('login_attempts');
+            $this->db->db_debug = $prev;
+            return $res;
+        } catch (\Throwable $e) {
+            log_message('error', 'clear_login_attempts failed: '.$e->getMessage());
+            return FALSE;
+        }
     }
 
     public function audit($action,$description,$user_id=NULL)
     {
-        return $this->db->insert('audit_logs',array('user_id'=>$user_id,'action'=>$action,'description'=>$description,'ip_address'=>$this->input->ip_address(),'user_agent'=>substr($this->input->user_agent(),0,255),'created_at'=>date('Y-m-d H:i:s')));
+        try {
+            $prev = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            $res = $this->db->insert('audit_logs',array('user_id'=>$user_id,'action'=>$action,'description'=>$description,'ip_address'=>$this->input->ip_address(),'user_agent'=>substr($this->input->user_agent(),0,255),'created_at'=>date('Y-m-d H:i:s')));
+            $this->db->db_debug = $prev;
+            return $res;
+        } catch (\Throwable $e) {
+            log_message('error', 'audit failed: '.$e->getMessage());
+            return FALSE;
+        }
     }
 
     public function settings()

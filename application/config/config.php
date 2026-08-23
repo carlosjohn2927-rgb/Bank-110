@@ -28,14 +28,19 @@ $config['charset'] = 'UTF-8';
 $config['enable_hooks'] = FALSE;
 $config['subclass_prefix'] = 'MY_';
 $config['composer_autoload'] = FALSE;
-$config['permitted_uri_chars'] = 'a-z 0-9~%.:_\-';
+$config['permitted_uri_chars'] = 'a-z 0-9~%.:_\\-';
 $config['enable_query_strings'] = FALSE;
 $config['controller_trigger'] = 'c';
 $config['function_trigger'] = 'm';
 $config['directory_trigger'] = 'd';
 $config['allow_get_array'] = TRUE;
 $config['log_threshold'] = (int) (getenv('VP_LOG_THRESHOLD') !== FALSE ? getenv('VP_LOG_THRESHOLD') : (getenv('CI_ENV') === 'production' ? 1 : 2));
-$config['log_path'] = FCPATH.'assets/logs/';
+// Ensure log directory exists to prevent 500 when logging fails
+$vp_log_path = FCPATH.'assets/logs/';
+if (!is_dir($vp_log_path)) {
+	@mkdir($vp_log_path, 0755, TRUE);
+}
+$config['log_path'] = $vp_log_path;
 $config['log_file_extension'] = '';
 $config['log_file_permissions'] = 0644;
 $config['log_date_format'] = 'Y-m-d H:i:s';
@@ -47,7 +52,12 @@ $config['sess_driver'] = getenv('VP_SESSION_DRIVER') ?: 'files';
 $config['sess_cookie_name'] = 'northwest_session';
 $config['sess_expiration'] = (int) (getenv('VP_SESSION_EXPIRATION') ?: 7200);
 $vp_session_path = getenv('VP_SESSION_PATH') ?: 'assets/logs/sessions';
-$config['sess_save_path'] = preg_match('#^([A-Za-z]:)?[\\\\/]#', $vp_session_path) ? $vp_session_path : FCPATH.trim($vp_session_path, '/\\');
+$vp_session_full = preg_match('#^([A-Za-z]:)?[\\\\/]#', $vp_session_path) ? $vp_session_path : FCPATH.trim($vp_session_path, '/\\\\');
+// Ensure session directory exists and is writable — missing dir causes 500 on login (session open failure)
+if (!is_dir($vp_session_full)) {
+	@mkdir($vp_session_full, 0755, TRUE);
+}
+$config['sess_save_path'] = $vp_session_full;
 $config['sess_match_ip'] = FALSE;
 $config['sess_time_to_update'] = 300;
 $config['sess_regenerate_destroy'] = TRUE;

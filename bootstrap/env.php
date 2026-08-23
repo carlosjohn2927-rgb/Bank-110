@@ -6,7 +6,7 @@
 function northwest_load_env($path)
 {
     if (!is_readable($path)) {
-        return;
+        return FALSE;
     }
 
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -31,11 +31,16 @@ function northwest_load_env($path)
                 $value = preg_replace('/\s+#.*$/', '', $value);
             }
         }
-        $value = str_replace(array('\\n','\\r'), array("\n","\r"), $value);
+        $value = str_replace(array('\\\\n','\\\\r'), array("\n","\r"), $value);
         putenv($name.'='.$value);
         $_ENV[$name] = $value;
         $_SERVER[$name] = $value;
     }
+    return TRUE;
 }
 
-northwest_load_env(dirname(__DIR__).'/.env');
+// Try .env first, then fall back to .env.example for local dev convenience
+$loaded = northwest_load_env(dirname(__DIR__).'/.env');
+if (!$loaded) {
+    northwest_load_env(dirname(__DIR__).'/.env.example');
+}

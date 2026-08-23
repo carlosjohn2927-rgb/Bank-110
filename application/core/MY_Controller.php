@@ -8,11 +8,15 @@ class MY_Controller extends CI_Controller
     public function __construct()
     {
         parent::__construct();
+        $this->ensure_writable_dirs();
         $this->user = $this->session->userdata('user');
         if ($this->user) {
             $secret = (string) $this->config->item('auth_secret');
-            $expected = hash_hmac('sha256', $this->user['id'].'|'.$this->user['role'].'|'.$this->user['created_at'], $secret);
-            if (!hash_equals($expected, (string) $this->session->userdata('auth_signature'))) {
+            $created = $this->user['created_at'] ?? '';
+            $expected = hash_hmac('sha256', $this->user['id'].'|'.$this->user['role'].'|'.$created, $secret);
+            $sig = (string) $this->session->userdata('auth_signature');
+            // hash_equals requires same length; if lengths differ, treat as invalid
+            if ($sig === '' || strlen($sig) !== strlen($expected) || !hash_equals($expected, $sig)) {
                 $this->session->sess_destroy();
                 $this->user = NULL;
             }
@@ -24,6 +28,37 @@ class MY_Controller extends CI_Controller
             $lang = 'english';
         }
         $this->lang->load('northwest', $lang);
+    }
+
+    /**
+     * Ensure critical writable directories exist. This prevents 500 errors
+     * on fresh cPanel deployments where the zip extraction may not have
+     * created empty folders or permissions are restrictive.
+     */
+    protected function ensure_writable_dirs()
+    {
+        $dirs = array(
+            FCPATH.'assets/logs',
+            FCPATH.'assets/logs/sessions',
+            FCPATH.'assets/logs/cache',
+            FCPATH.'assets/logs/ratelimit',
+            FCPATH.'assets/uploads',
+            FCPATH.'assets/uploads/checks',
+            FCPATH.'assets/statements',
+            FCPATH.'application/cache',
+        );
+        foreach ($dirs as $dir) {
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, TRUE);
+            }
+        }
+        // Protective index.html in case .htaccess is missing
+        foreach ($dirs as $dir) {
+            $index = rtrim($dir, '/\\').'/index.html';
+            if (is_dir($dir) && !file_exists($index)) {
+                @file_put_contents($index, '<!doctype html><title>403 Forbidden</title>');
+            }
+        }
     }
 
     protected function render($view, $data = array(), $layout = 'layouts/customer')
@@ -94,13 +129,31 @@ class MY_Controller extends CI_Controller
      * Is the database connection usable? In production db_debug is disabled, so
      * a failed connection leaves $this->db->conn_id empty instead of raising an
      * error. We detect that here so the app can degrade gracefully.
+     *
+     * Enhanced: also checks that the required `users` table exists and is
+     * queryable. This prevents a fatal error when an empty sqlite file is
+     * auto-created (PDO creates an empty file) but contains no tables — the
+     * old code returned TRUE for db_ok() and then authenticate() called
+     * ->get()->row_array() on FALSE, causing HTTP 500.
      */
     protected function db_ok()
     {
         if (!isset($this->db) || empty($this->db->conn_id)) {
             return FALSE;
         }
-        return TRUE;
+        try {
+            $prev_debug = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            // Lightweight check that the schema is present
+            $q = $this->db->query('SELECT 1 FROM users LIMIT 1');
+            $this->db->db_debug = $prev_debug;
+            if ($q === FALSE) {
+                return FALSE;
+            }
+            return TRUE;
+        } catch (\Throwable $e) {
+            return FALSE;
+        }
     }
 
     /**
@@ -114,7 +167,7 @@ class MY_Controller extends CI_Controller
         if ($this->db_ok()) {
             return;
         }
-        log_message('error', 'Database unavailable: connection failed (check VP_DB_* in .env).');
+        log_message('error', 'Database unavailable: connection failed or schema missing (check VP_DB_* in .env and import production.sql).');
         $this->render_db_unavailable();
     }
 
@@ -127,7 +180,7 @@ class MY_Controller extends CI_Controller
     {
         $setup_url = function_exists('site_url') ? site_url('setup/check') : '/setup/check';
         if (ENVIRONMENT === 'development') {
-            $hint = 'Check VP_DB_HOST / VP_DB_NAME / VP_DB_USER / VP_DB_PASS in .env, then import database/production.sql.';
+            $hint = 'Check VP_DB_HOST / VP_DB_NAME / VP_DB_USER / VP_DB_PASS in .env, then import database/production.sql. Also verify assets/logs/sessions is writable.';
         } else {
             $hint = 'Our team has been notified. Please try again in a few moments.';
         }
@@ -144,13 +197,13 @@ class MY_Controller extends CI_Controller
             .'.hint{color:#7d8a99;font-size:12px;line-height:1.6;margin:0 0 18px}'
             .'.btn{display:inline-block;background:#1468e5;color:#fff;padding:12px 22px;border-radius:10px;'
             .'text-decoration:none;font-weight:700;font-size:14px}.foot{margin-top:22px;color:#9aa7b6;font-size:11px}</style></head>'
-            .'<body><div class="card"><div class="mark">North<span>West</span></div>'
+            .'<body><div class="card"><div class=\"mark\">North<span>West</span></div>'
             .'<h1>We&rsquo;ll be right back</h1>'
-            .'<p class="sub">We&rsquo;re performing a quick upgrade to our systems. Your accounts and money are safe.</p>'
-            .'<p class="hint">'.htmlspecialchars($hint, ENT_QUOTES, 'UTF-8').'</p>'
-            .'<a class="btn" href="/">Try again</a>'
-            .'<div class="foot">&copy; '.date('Y').' NorthWest Financial &middot; '
-            .'Administrator? Visit <a href="'.htmlspecialchars($setup_url, ENT_QUOTES, 'UTF-8').'">the setup check</a>.</div>'
+            .'<p class=\"sub\">We&rsquo;re performing a quick upgrade to our systems. Your accounts and money are safe.</p>'
+            .'<p class=\"hint\">'.htmlspecialchars($hint, ENT_QUOTES, 'UTF-8').'</p>'
+            .'<a class=\"btn\" href=\"/\">Try again</a>'
+            .'<div class=\"foot\">&copy; '.date('Y').' NorthWest Financial &middot; '
+            .'Administrator? Visit <a href=\"'.htmlspecialchars($setup_url, ENT_QUOTES, 'UTF-8').'\">the setup check</a>.</div>'
             .'</div></body></html>';
         // Native headers + echo (no dependency on CI output internals) so this
         // always renders even when triggered from a controller constructor.
