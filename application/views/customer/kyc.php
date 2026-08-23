@@ -70,7 +70,7 @@ $icons = array('passport'=>'🛂','drivers_license'=>'🚗','national_id'=>'🪪
             </div>
             <span class="kyc-doc__status"><?=ucfirst($d['status'])?></span>
             <?php if ($d['status'] === 'pending'): ?>
-              <form method="post" action="<?=site_url('kyc/delete/'.$d['id'])?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" onsubmit="return confirm('Remove this pending document?');">
+              <form method="post" action="<?=site_url('kyc/delete/'.$d['id'])?>" onsubmit="return confirm('Remove this pending document?');"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
                 <button class="kyc-doc__del" title="Delete" aria-label="Delete">×</button>
               </form>
             <?php endif; ?>

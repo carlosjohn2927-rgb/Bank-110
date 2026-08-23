@@ -8,7 +8,7 @@
   <a class="outline" href="<?=site_url('settings')?>">Cancel</a>
 </div>
 
-<form method="post" action="<?=site_url('settings/twofa/confirm')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" class="totp-setup">
+<form method="post" action="<?=site_url('settings/twofa/confirm')?>" class="totp-setup"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
   <div class="grid two">
     <section class="panel totp-qr-panel">
       <div class="panel-head"><div><h2>1. Scan this code</h2><p>With your authenticator app</p></div></div>

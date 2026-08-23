@@ -13,7 +13,9 @@ p.sub{color:#718095;margin:0 0 20px;font-size:13px}
 .row .label{font-weight:600;flex:1}
 .row .hint{color:#c33d4d;font-size:11px;max-width:48%;text-align:right}
 .foot{margin-top:18px;font-size:11px;color:#98a5b6}
-</style></head><body><div class="card">
+</style><link rel="icon" href="<?=base_url('public/favicon.svg')?>" type="image/svg+xml">
+<link rel="alternate icon" href="<?=base_url('public/favicon.ico')?>" sizes="any">
+</head><body><div class="card">
 <h1>Installation check</h1>
 <p class="sub">Verifies that NorthWest is fully installed and configured.</p>
 <div class="banner <?=$all_ok?'ok':'fail'?>"><?=$all_ok?'✓ All checks passed — the application is fully installed.':'! Some checks failed — see below.'?></div>

@@ -54,6 +54,8 @@ p {
 	margin: 12px 15px 12px 15px;
 }
 </style>
+<link rel="icon" href="<?=base_url('public/favicon.svg')?>" type="image/svg+xml">
+<link rel="alternate icon" href="<?=base_url('public/favicon.ico')?>" sizes="any">
 </head>
 <body>
 	<div id="container">

@@ -102,7 +102,7 @@ $total_spent = array_sum($by_category);
         $cls = $limit <= 0 ? 'is-unset' : ($pct >= 100 ? 'is-over' : ($pct >= 80 ? 'is-near' : ''));
       ?>
       <div class="budget-limit <?=$cls?>">
-        <form method="post" action="<?=site_url('budget/save-limit')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" class="budget-limit__form">
+        <form method="post" action="<?=site_url('budget/save-limit')?>" class="budget-limit__form"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
           <div class="budget-limit__head">
             <span><i style="background:<?=$cat_colors[$cat] ?? '#1468e5'?>"></i><?=html_escape($cat)?></span>
             <?php if ($limit > 0): ?>

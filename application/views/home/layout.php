@@ -11,6 +11,8 @@
 <title><?=html_escape($title ?? 'NorthWest Financial')?> · NorthWest Financial</title>
 <meta name="description" content="<?=html_escape($seo_desc ?? '')?>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="<?=base_url('public/favicon.svg')?>" type="image/svg+xml">
+<link rel="alternate icon" href="<?=base_url('public/favicon.ico')?>" sizes="any">
 <link rel="stylesheet" href="<?=base_url('public/css/app.css')?>">
 </head>
 <body class="home public-page">
