@@ -270,7 +270,7 @@ INSERT INTO notification_templates(template_key,channel,subject,body,is_active,c
 ('ticket_reply','email','Update on support request {{reference}}','NorthWest support has replied to your request.',1,NOW(),NOW())
 ON DUPLICATE KEY UPDATE subject=VALUES(subject),body=VALUES(body);
 INSERT INTO settings(setting_key,setting_value,updated_at) VALUES
-('application_initialized','1',NOW()),('schema_version','2026.08.21',NOW()),('timezone','UTC',NOW()),('maintenance_mode','0',NOW()),('registration_enabled','0',NOW()),('supported_currencies','USD,EUR,GBP',NOW()),
+('application_initialized','1',NOW()),('schema_version','2026.08.21',NOW()),('timezone','UTC',NOW()),('maintenance_mode','0',NOW()),('registration_enabled','1',NOW()),('supported_currencies','USD,EUR,GBP',NOW()),
 ('announcement_text','Welcome to NorthWest — Secure online banking with 256-bit encryption · Free NorthWest-to-NorthWest transfers · 24/7 support',NOW()),
 ('seo_site_name','NorthWest Financial',NOW()),('seo_title','NorthWest Financial — Secure Online Banking',NOW()),
 ('seo_description','Simple, secure online banking. Send money, manage cards, apply for loans and track your finances — all in one protected place with 256-bit encryption.',NOW()),
