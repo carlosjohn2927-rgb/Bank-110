@@ -24,7 +24,8 @@
     <?php $credentials = $this->input->get('credentials') && $this->session->userdata('captcha_verified'); ?>
     <?php if (!$credentials): ?>
       <p>Please confirm you are not a robot by verifying the auto-generated code below.</p>
-      <div class="captcha"><strong><?=implode(' ', str_split($captcha))?></strong><button onclick="location.reload()">↻</button></div>
+      <?php $captcha_safe = (string) ($captcha ?? $this->session->userdata('captcha') ?? '00000'); $captcha_safe = preg_replace('/[^0-9]/', '', $captcha_safe) ?: '00000'; ?>
+      <div class="captcha"><strong><?=implode(' ', str_split($captcha_safe))?></strong><button onclick="location.reload()">↻</button></div>
       <?=form_open('verify')?>
         <label>Verification code</label>
         <input name="code" inputmode="numeric" required autofocus placeholder="Enter the code shown above">

@@ -18,12 +18,22 @@ $query_builder = TRUE;
 $vp_db_driver_env = getenv('VP_DB_DRIVER');
 $vp_db_host_env = getenv('VP_DB_HOST');
 $vp_db_name_env = getenv('VP_DB_NAME');
+$vp_ci_env = getenv('CI_ENV') ?: (isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'production');
+
 if ($vp_db_driver_env === FALSE || $vp_db_driver_env === '') {
-    // If MySQL env vars are missing, default to sqlite for local dev.
-    if ($vp_db_host_env === FALSE || $vp_db_host_env === '' || $vp_db_name_env === FALSE || $vp_db_name_env === '') {
-        $vp_db_driver_env = 'sqlite';
-    } else {
+    // In production we MUST default to mysqli so a missing .env shows a clear
+    // "service unavailable" page instead of creating an empty sqlite file that
+    // then causes a fatal error (Call to member function row_array() on bool)
+    // and a generic HTTP 500 on login.
+    if (strtolower((string)$vp_ci_env) === 'production') {
         $vp_db_driver_env = 'mysqli';
+    } else {
+        // Local dev convenience: sqlite when MySQL vars are missing
+        if ($vp_db_host_env === FALSE || $vp_db_host_env === '' || $vp_db_name_env === FALSE || $vp_db_name_env === '') {
+            $vp_db_driver_env = 'sqlite';
+        } else {
+            $vp_db_driver_env = 'mysqli';
+        }
     }
 }
 $vp_db_driver = strtolower((string) $vp_db_driver_env);
@@ -31,11 +41,16 @@ $vp_db_driver = strtolower((string) $vp_db_driver_env);
 if ($vp_db_driver === 'sqlite' || $vp_db_driver === 'pdo_sqlite')
 {
     $vp_sqlite_path = (string) (getenv('VP_SQLITE_PATH') ?: '');
-    if ($vp_sqlite_path === '')
-    {
+    if ($vp_sqlite_path === '') {
         $vp_sqlite_path = FCPATH.'application/cache/production.sqlite';
     }
     $vp_sqlite_path = str_replace('\\', '/', $vp_sqlite_path);
+
+    // Ensure the directory for the sqlite file exists to avoid PDO creation failure
+    $sqlite_dir = dirname($vp_sqlite_path);
+    if (!is_dir($sqlite_dir)) {
+        @mkdir($sqlite_dir, 0755, TRUE);
+    }
 
     $db['default'] = array(
         'dsn'      => 'sqlite:'.$vp_sqlite_path,
@@ -46,7 +61,7 @@ if ($vp_db_driver === 'sqlite' || $vp_db_driver === 'pdo_sqlite')
         'dbdriver' => 'pdo',
         'dbprefix' => '',
         'pconnect' => FALSE,
-        'db_debug' => (ENVIRONMENT !== 'production'),
+        'db_debug' => FALSE, // Always FALSE for sqlite to prevent fatal on missing tables — db_ok() will handle gracefully
         'cache_on'  => FALSE,
         'cachedir'  => '',
         'char_set' => 'utf8',
