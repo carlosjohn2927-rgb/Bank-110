@@ -40,7 +40,7 @@ $d = $deposit; $isPending = $d['status']==='pending';
     </div>
 
     <?php if($isPending): ?>
-    <form method="post" action="<?=site_url('admin/check-deposits/'.$d['id'].'/review')?>" class="check-review-form">
+    <form method="post" action="<?=site_url('admin/check-deposits/'.$d['id'].'/review')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" class="check-review-form">
       <label>Reviewer note (required if rejecting)
         <textarea name="note" rows="3" placeholder="Add a note — shown to the customer, especially for rejections."></textarea>
       </label>

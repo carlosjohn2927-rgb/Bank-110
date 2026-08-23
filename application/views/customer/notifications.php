@@ -4,7 +4,7 @@ $filters=array(
   ''=>'All','unread'=>'Unread','transfer'=>'Transfers','deposit'=>'Deposits',
   'ticket'=>'Support','loan'=>'Loans','card'=>'Cards','security'=>'Security','general'=>'General',
 );
-$unread_badge=function($key)use($unread_by_type){if($key==='')return $unread_total; if($key==='unread')return $unread_total; return isset($unread_by_type[$key])?$unread_by_type[$key]:0;};
+$unread_badge=function($key)use($unread_by_type,$unread_total){if($key==='')return $unread_total; if($key==='unread')return $unread_total; return isset($unread_by_type[$key])?$unread_by_type[$key]:0;};
 ?>
 <div class="page-title">
   <div>
@@ -14,10 +14,10 @@ $unread_badge=function($key)use($unread_by_type){if($key==='')return $unread_tot
   </div>
   <?php if($notifs): ?>
   <div class="notif-actions">
-    <form method="post" action="<?=site_url('notifications/mark-all')?>" style="display:inline">
+    <form method="post" action="<?=site_url('notifications/mark-all')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" style="display:inline">
       <button class="outline" type="submit">✓ Mark all read</button>
     </form>
-    <form method="post" action="<?=site_url('notifications/clear')?>" style="display:inline" onsubmit="return confirm('Delete all notifications? This cannot be undone.');">
+    <form method="post" action="<?=site_url('notifications/clear')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" style="display:inline" onsubmit="return confirm('Delete all notifications? This cannot be undone.');">
       <button class="btn-danger-outline" type="submit">Clear all</button>
     </form>
   </div>
@@ -52,7 +52,7 @@ $unread_badge=function($key)use($unread_by_type){if($key==='')return $unread_tot
       <div class="notif-row__body">
         <b><?=html_escape($n['title'])?></b>
         <small><?=html_escape($n['body'])?></small>
-        <time datetime="<?=date('c',strtotime($n['created_at']))?>"><?=$this->time_ago($n['created_at'])?></time>
+        <time datetime="<?=date('c',strtotime($n['created_at']))?>"><?=time_ago($n['created_at'])?></time>
       </div>
       <?php if($is_unread):?><span class="notif-dot" title="Unread"></span><?php endif;?>
     </a>

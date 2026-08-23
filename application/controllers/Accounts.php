@@ -26,12 +26,12 @@ class Accounts extends MY_Controller {
    $account=$this->Bank_model->account((int)$this->input->post('account_id'),$this->user['id']);
    if(!$account || $account['status']!=='active'){$this->session->set_flashdata('error','The selected account is unavailable.');redirect('accounts');}
    $amount=round((float)$this->input->post('amount'),2);
-   $reference='DEP-'.date('ymd').'-'.random_int(10000,99999);$now=date('Y-m-d H:i:s');
+   $reference='DEP-'.date('ymd').'-'.str_pad((string)random_int(0,999999),6,'0',STR_PAD_LEFT);$now=date('Y-m-d H:i:s');
    $this->db->trans_start();
    $this->db->where('id',$account['id'])->set('balance','balance+'.$amount,FALSE)->set('available_balance','available_balance+'.$amount,FALSE)->update('accounts');
    $this->db->insert('transactions',array('account_id'=>$account['id'],'reference'=>$reference,'type'=>'credit','category'=>'Deposit','description'=>'Cash or transfer deposit','amount'=>$amount,'currency'=>$account['currency'],'balance_after'=>(float)$account['available_balance']+$amount,'status'=>'completed','transaction_date'=>date('Y-m-d'),'created_at'=>$now));
    $this->db->trans_complete();
-   if($this->db->trans_status()){$this->Bank_model->audit('deposit','Deposit of '.$amount.' '.$account['currency'].' to account #'.$account['id'],$this->user['id']);$this->Bank_model->notify_user($this->user['id'],'deposit','Deposit of '.money($amount,$account['currency']).' completed','Reference: '.$reference,'accounts');$this->session->set_flashdata('success','Deposit completed. Reference: '.$reference);}
+   if($this->db->trans_status()){$this->Bank_model->audit('deposit','Deposit of '.$amount.' '.$account['currency'].' to account #'.$account['id'],$this->user['id']);$this->Bank_model->add_notification($this->user['id'],'deposit','Deposit of '.money($amount,$account['currency']).' completed','Reference: '.$reference,'accounts');$this->session->set_flashdata('success','Deposit completed. Reference: '.$reference);}
    else $this->session->set_flashdata('error','The deposit could not be completed.');
   } else $this->session->set_flashdata('error',validation_errors('',' '));
   redirect('accounts');

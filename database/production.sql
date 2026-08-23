@@ -198,7 +198,7 @@ SET @ddl := IF(@has_totp = 0, 'ALTER TABLE users ADD COLUMN totp_secret VARCHAR(
 PREPARE stmt FROM @ddl; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 INSERT INTO users (id,username,email,password_hash,first_name,last_name,role,status,created_at,updated_at) VALUES
-(1,'northadmin','admin@northwest.financeltd.org','$2y$12$EltRBU5UuWsjluAHadTdPuyrSTUJLMKLUGH2X8HugEknRLIlhZGYe','North','Admin','admin','active',NOW(),NOW()),
+(1,'northadmin','admin@northwest.financeltd.org','$2y$12$/h4aEDW/sPrRG4T9vb6mbOIuyI.SnP1CBO0YRwtGJS7dN0xeVYIPG','North','Admin','admin','active',NOW(),NOW()),
 (2,'jamesd','james.davidson@example.com','$2y$12$GCWbJYR5lq3354CMwSGPl.jswvmIOZv9c0ymGny2Q4tdidcnhuedS','James','Davidson','customer','active',NOW(),NOW()),
 (3,'oliviam','olivia.martin@example.com','$2y$12$GCWbJYR5lq3354CMwSGPl.jswvmIOZv9c0ymGny2Q4tdidcnhuedS','Olivia','Martin','customer','active',NOW(),NOW()),
 (4,'jacksonl','jackson.lee@example.com','$2y$12$GCWbJYR5lq3354CMwSGPl.jswvmIOZv9c0ymGny2Q4tdidcnhuedS','Jackson','Lee','customer','active',NOW(),NOW())

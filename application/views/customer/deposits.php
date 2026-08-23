@@ -20,7 +20,7 @@
   <!-- Capture form -->
   <section class="panel deposit-capture">
     <div class="panel-head"><div><h2>New check deposit</h2><p>Photos must be clear, well-lit and show all four corners.</p></div></div>
-    <form method="post" action="<?=site_url('deposits/create')?>" enctype="multipart/form-data" class="deposit-form" id="depositForm">
+    <form method="post" action="<?=site_url('deposits/create')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" enctype="multipart/form-data" class="deposit-form" id="depositForm">
       <label>Deposit to
         <select name="account_id" required>
           <option value="">Choose an account…</option>
