@@ -39,7 +39,7 @@ $colors = array('#1468e5','#15a36a','#7855d0','#e4aa3b','#e64b5d','#0e9aa7');
   <article class="goal-card <?= $is_done ? 'goal-card--done' : '' ?>" style="--accent:<?=html_escape($g['color'] ?: '#1468e5')?>">
     <header>
       <span class="goal-card__icon"><?=html_escape($g['icon'] ?: '🎯')?></span>
-      <form method="post" action="<?=site_url('goals/'.$g['id'].'/delete')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" onsubmit="return confirm('Delete this goal? This cannot be undone.');" style="margin-left:auto">
+      <form method="post" action="<?=site_url('goals/'.$g['id'].'/delete')?>" onsubmit="return confirm('Delete this goal? This cannot be undone.');" style="margin-left:auto"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
         <button class="goal-card__del" title="Delete goal" aria-label="Delete goal">×</button>
       </form>
     </header>
@@ -69,7 +69,7 @@ $colors = array('#1468e5','#15a36a','#7855d0','#e4aa3b','#e64b5d','#0e9aa7');
 <!-- New goal dialog -->
 <dialog id="new-goal">
   <div class="dialog-head"><h2>New savings goal</h2><button type="button" data-close>×</button></div>
-  <form method="post" action="<?=site_url('goals/create')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" style="padding:24px">
+  <form method="post" action="<?=site_url('goals/create')?>" style="padding:24px"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
     <label>Goal name<input name="name" required maxlength="120" placeholder="e.g. Summer holiday"></label>
     <label>Target amount<input name="target_amount" type="number" step="0.01" min="1" required placeholder="5000"></label>
     <label>Target date (optional)<input name="target_date" type="date" min="<?=date('Y-m-d')?>"></label>
@@ -94,7 +94,7 @@ $colors = array('#1468e5','#15a36a','#7855d0','#e4aa3b','#e64b5d','#0e9aa7');
 <?php foreach ($goals as $g): ?>
 <dialog id="add-<?=$g['id']?>">
   <div class="dialog-head"><h2>Add to "<?=html_escape($g['name'])?>"</h2><button type="button" data-close>×</button></div>
-  <form method="post" action="<?=site_url('goals/'.$g['id'].'/contribute')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" style="padding:24px">
+  <form method="post" action="<?=site_url('goals/'.$g['id'].'/contribute')?>" style="padding:24px"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
     <p>Currently saved: <b><?=money($g['saved_amount'])?></b> of <?=money($g['target_amount'])?></p>
     <label>Amount<input name="amount" type="number" step="0.01" min="0.01" required autofocus></label>
     <button class="btn wide">Add money</button>
@@ -102,7 +102,7 @@ $colors = array('#1468e5','#15a36a','#7855d0','#e4aa3b','#e64b5d','#0e9aa7');
 </dialog>
 <dialog id="withdraw-<?=$g['id']?>">
   <div class="dialog-head"><h2>Withdraw from "<?=html_escape($g['name'])?>"</h2><button type="button" data-close>×</button></div>
-  <form method="post" action="<?=site_url('goals/'.$g['id'].'/withdraw')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" style="padding:24px">
+  <form method="post" action="<?=site_url('goals/'.$g['id'].'/withdraw')?>" style="padding:24px"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
     <p>Available: <b><?=money($g['saved_amount'])?></b></p>
     <label>Amount<input name="amount" type="number" step="0.01" min="0.01" max="<?=html_escape($g['saved_amount'])?>" required autofocus></label>
     <button class="btn wide">Withdraw</button>

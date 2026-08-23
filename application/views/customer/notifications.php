@@ -14,10 +14,10 @@ $unread_badge=function($key)use($unread_by_type,$unread_total){if($key==='')retu
   </div>
   <?php if($notifs): ?>
   <div class="notif-actions">
-    <form method="post" action="<?=site_url('notifications/mark-all')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" style="display:inline">
+    <form method="post" action="<?=site_url('notifications/mark-all')?>" style="display:inline"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
       <button class="outline" type="submit">✓ Mark all read</button>
     </form>
-    <form method="post" action="<?=site_url('notifications/clear')?><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">" style="display:inline" onsubmit="return confirm('Delete all notifications? This cannot be undone.');">
+    <form method="post" action="<?=site_url('notifications/clear')?>" style="display:inline" onsubmit="return confirm('Delete all notifications? This cannot be undone.');"><input type="hidden" name="<?=$this->security->get_csrf_token_name()?>" value="<?=$this->security->get_csrf_hash()?>">
       <button class="btn-danger-outline" type="submit">Clear all</button>
     </form>
   </div>
