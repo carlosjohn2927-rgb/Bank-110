@@ -36,6 +36,8 @@ class MY_Controller extends CI_Controller
         $data['notifications'] = $this->recent_notifications();
         $data['app_notifications'] = $this->app_notifications();
         $data['unread_count'] = $this->unread_count();
+        $data['impersonating'] = (bool) $this->session->userdata('impersonation_admin');
+        $data['impersonation_admin'] = $this->session->userdata('impersonation_admin');
         $this->load->view($layout, $data);
     }
 
