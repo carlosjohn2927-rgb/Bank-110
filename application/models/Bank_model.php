@@ -906,7 +906,7 @@ class Bank_model extends CI_Model
     private function decrypt_backup_codes($user)
     {
         $raw = (string) ($user['backup_codes_hash'] ?? '');
-        if ($raw === '' || strpos($raw, 'v1:') !== 0) return '';
+        if ($raw === '') return '';
         if (strpos($raw, 'v2:') === 0) {
             $key = (string) getenv('VP_ENCRYPTION_KEY') ?: (string) config_item('encryption_key');
             if ($key === '' || !function_exists('openssl_decrypt')) return '';
@@ -917,7 +917,8 @@ class Bank_model extends CI_Model
             $arr = json_decode($plain, TRUE);
             return is_array($arr) ? implode(',', $arr) : '';
         }
-        // v1 obfuscation
+        // v1 obfuscation (legacy)
+        if (strpos($raw, 'v1:') !== 0) return '';
         list(, $b64) = explode(':', $raw, 2);
         $arr = json_decode(str_rot13(base64_decode($b64)), TRUE);
         return is_array($arr) ? implode(',', $arr) : '';
@@ -1058,7 +1059,20 @@ class Bank_model extends CI_Model
 
     public function settings()
     {
-        $rows=$this->db->get('settings')->result_array(); $out=array(); foreach($rows as $r)$out[$r['setting_key']]=$r['setting_value']; return $out;
+        // Guard against a failed query (e.g. the database is unreachable). With
+        // db_debug disabled in production a failed query returns FALSE, so we
+        // must not chain ->result_array() on it — that is a fatal error that
+        // turns a misconfigured database into a blank white page.
+        $query = $this->db->get('settings');
+        if ($query === FALSE || !method_exists($query, 'result_array')) {
+            return array();
+        }
+        $rows = $query->result_array();
+        $out = array();
+        foreach ($rows as $r) {
+            $out[$r['setting_key']] = $r['setting_value'];
+        }
+        return $out;
     }
 
     /* ---- Multi-currency exchange ---- */
