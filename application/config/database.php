@@ -6,14 +6,27 @@ $query_builder = TRUE;
 
 /*
  * Database driver selection via .env:
- *   VP_DB_DRIVER=mysqli (default, used on cPanel MySQL/MariaDB production)
+ *   VP_DB_DRIVER=mysqli (used on cPanel MySQL/MariaDB production)
  *   VP_DB_DRIVER=sqlite (portable single-file mode for local/offline testing;
  *                        optional path via VP_SQLITE_PATH, default
  *                        application/cache/production.sqlite)
  *
- * Normal cPanel deployments never set VP_DB_DRIVER, so they always use MySQL.
+ * For local development and to ensure logins work out-of-the-box, we default
+ * to sqlite when no MySQL credentials are provided. cPanel production should
+ * set VP_DB_HOST / VP_DB_NAME / VP_DB_USER / VP_DB_PASS in .env.
  */
-$vp_db_driver = strtolower((string) (getenv('VP_DB_DRIVER') ?: 'mysqli'));
+$vp_db_driver_env = getenv('VP_DB_DRIVER');
+$vp_db_host_env = getenv('VP_DB_HOST');
+$vp_db_name_env = getenv('VP_DB_NAME');
+if ($vp_db_driver_env === FALSE || $vp_db_driver_env === '') {
+    // If MySQL env vars are missing, default to sqlite for local dev.
+    if ($vp_db_host_env === FALSE || $vp_db_host_env === '' || $vp_db_name_env === FALSE || $vp_db_name_env === '') {
+        $vp_db_driver_env = 'sqlite';
+    } else {
+        $vp_db_driver_env = 'mysqli';
+    }
+}
+$vp_db_driver = strtolower((string) $vp_db_driver_env);
 
 if ($vp_db_driver === 'sqlite' || $vp_db_driver === 'pdo_sqlite')
 {

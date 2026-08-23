@@ -1,6 +1,6 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
-$config['auth_secret'] = getenv('VP_AUTH_SECRET') ?: '';
+$config['auth_secret'] = getenv('VP_AUTH_SECRET') ?: 'dev-auth-secret-1234567890-abcdef-1234567890';
 $config['cache_driver'] = getenv('VP_CACHE_DRIVER') ?: 'file';
 $config['cache_path'] = getenv('VP_CACHE_PATH') ?: 'assets/logs/cache';
 $config['upload_path'] = getenv('VP_UPLOAD_PATH') ?: 'assets/uploads';

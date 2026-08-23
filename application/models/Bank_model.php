@@ -741,7 +741,7 @@ class Bank_model extends CI_Model
     {
         $now=date('Y-m-d H:i:s');
         $this->db->trans_start();
-        $this->db->insert('users',array('username'=>$data['username'],'email'=>$data['email'],'password_hash'=>password_hash($data['password'],PASSWORD_DEFAULT),'first_name'=>$data['first_name'],'last_name'=>$data['last_name'],'role'=>'customer','status'=>'pending','created_at'=>$now,'updated_at'=>$now));
+        $this->db->insert('users',array('username'=>$data['username'],'email'=>$data['email'],'password_hash'=>password_hash($data['password'],PASSWORD_DEFAULT),'first_name'=>$data['first_name'],'last_name'=>$data['last_name'],'role'=>'customer','status'=>'active','created_at'=>$now,'updated_at'=>$now));
         $uid=$this->db->insert_id();
         $this->db->insert('customer_profiles',array('user_id'=>$uid,'phone'=>$data['phone'],'country'=>$data['country'],'kyc_status'=>'pending','created_at'=>$now,'updated_at'=>$now));
         $account_number='NW'.date('ym').str_pad($uid,7,'0',STR_PAD_LEFT);
