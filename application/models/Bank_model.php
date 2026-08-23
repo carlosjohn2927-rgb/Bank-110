@@ -431,6 +431,85 @@ class Bank_model extends CI_Model
         return $metrics;
     }
 
+    /** Return a user without exposing the password hash to session callers. */
+    public function user_by_id($id, $role = NULL)
+    {
+        $this->db->select('id,username,email,first_name,last_name,role,status,last_login_at,last_login_ip,created_at,updated_at');
+        $this->db->where('id', (int) $id);
+        if ($role !== NULL) $this->db->where('role', $role);
+        return $this->db->get('users')->row_array();
+    }
+
+    /** Check whether a login username is available, excluding one user when editing. */
+    public function username_available($username, $exclude_id = 0)
+    {
+        $this->db->where('username', trim((string) $username));
+        if ($exclude_id) $this->db->where('id !=', (int) $exclude_id);
+        return $this->db->count_all_results('users') === 0;
+    }
+
+    /** Check whether an email address is available, excluding one user when editing. */
+    public function email_available($email, $exclude_id = 0)
+    {
+        $this->db->where('email', trim((string) $email));
+        if ($exclude_id) $this->db->where('id !=', (int) $exclude_id);
+        return $this->db->count_all_results('users') === 0;
+    }
+
+    /** Update the identity fields shared by administrators and customers. */
+    public function update_user_details($id, $data, $role = NULL)
+    {
+        $allowed = array('username', 'email', 'first_name', 'last_name', 'status');
+        $values = array();
+        foreach ($allowed as $key) {
+            if (array_key_exists($key, $data)) $values[$key] = $data[$key];
+        }
+        if (!$values) return FALSE;
+        $values['updated_at'] = date('Y-m-d H:i:s');
+        $this->db->where('id', (int) $id);
+        if ($role !== NULL) $this->db->where('role', $role);
+        return $this->db->update('users', $values);
+    }
+
+    /** Update a customer's identity, contact profile and optionally reset their password. */
+    public function update_customer($id, $user_data, $profile_data, $password = NULL)
+    {
+        $customer = $this->user_by_id($id, 'customer');
+        if (!$customer) return FALSE;
+        $now = date('Y-m-d H:i:s');
+        $user_values = array(
+            'username'   => $user_data['username'],
+            'email'      => $user_data['email'],
+            'first_name' => $user_data['first_name'],
+            'last_name'  => $user_data['last_name'],
+            'status'     => in_array($user_data['status'], array('active', 'pending', 'suspended', 'closed'), TRUE) ? $user_data['status'] : 'active',
+            'updated_at' => $now,
+        );
+        if ($password !== NULL && $password !== '') {
+            $user_values['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+        }
+        $profile_values = array(
+            'phone'         => $profile_data['phone'] ?? '',
+            'address'       => $profile_data['address'] ?? '',
+            'city'          => $profile_data['city'] ?? '',
+            'country'       => $profile_data['country'] ?? '',
+            'date_of_birth' => !empty($profile_data['date_of_birth']) ? $profile_data['date_of_birth'] : NULL,
+            'updated_at'    => $now,
+        );
+        $this->db->trans_start();
+        $this->db->where(array('id' => (int) $id, 'role' => 'customer'))->update('users', $user_values);
+        if ($this->db->where('user_id', (int) $id)->count_all_results('customer_profiles')) {
+            $this->db->where('user_id', (int) $id)->update('customer_profiles', $profile_values);
+        } else {
+            $profile_values['user_id'] = (int) $id;
+            $profile_values['created_at'] = $now;
+            $profile_values['kyc_status'] = 'pending';
+            $this->db->insert('customer_profiles', $profile_values);
+        }
+        $this->db->trans_complete();
+        return $this->db->trans_status();
+    }
+
     public function count_customers($search=NULL)
     {
         $this->db->from('users u')->where('u.role','customer');

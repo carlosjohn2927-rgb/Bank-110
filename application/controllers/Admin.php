@@ -69,6 +69,81 @@ class Admin extends MY_Controller {
   }
   $this->page('customer_form',array('title'=>'Create customer'));
  }
+ public function customer_edit($id){
+  $id=(int)$id; $customer=$this->Bank_model->customer_detail($id);
+  if(!$customer) show_404();
+  if($this->input->method()==='post'){
+   $this->form_validation->set_rules('first_name','First name','required|trim|max_length[80]');
+   $this->form_validation->set_rules('last_name','Last name','required|trim|max_length[80]');
+   $this->form_validation->set_rules('username','Username','required|trim|max_length[80]');
+   $this->form_validation->set_rules('email','Email','required|valid_email|max_length[190]');
+   $this->form_validation->set_rules('status','Status','required|in_list[active,pending,suspended,closed]');
+   $password=(string)$this->input->post('password');
+   if($password!=='') $this->form_validation->set_rules('password','New password','min_length[8]');
+   $valid=$this->form_validation->run();
+   $username=$this->input->post('username',TRUE); $email=$this->input->post('email',TRUE);
+   if($valid && !$this->Bank_model->username_available($username,$id)){$valid=FALSE;$this->session->set_flashdata('error','That username is already in use.');}
+   if($valid && !$this->Bank_model->email_available($email,$id)){$valid=FALSE;$this->session->set_flashdata('error','That email address is already in use.');}
+   if($valid){
+    $ok=$this->Bank_model->update_customer($id,array('first_name'=>$this->input->post('first_name',TRUE),'last_name'=>$this->input->post('last_name',TRUE),'username'=>$username,'email'=>$email,'status'=>$this->input->post('status',TRUE)),array('phone'=>$this->input->post('phone',TRUE),'address'=>$this->input->post('address',TRUE),'city'=>$this->input->post('city',TRUE),'country'=>$this->input->post('country',TRUE),'date_of_birth'=>$this->input->post('date_of_birth',TRUE)},$password);
+    if($ok){$this->Bank_model->audit('customer_updated','Customer #'.$id.' profile updated by administrator',$this->user['id']);if($password!=='')$this->Bank_model->audit('customer_password_reset','Customer #'.$id.' password reset by administrator',$this->user['id']);$this->session->set_flashdata('success','Customer account updated.');redirect('admin/customers/'.$id);}
+    $this->session->set_flashdata('error','Unable to update this customer account.');
+   }elseif(!$this->session->flashdata('error')) $this->session->set_flashdata('error',validation_errors('',' '));
+   redirect('admin/customers/'.$id.'/edit');
+  }
+  $this->page('customer_edit',array('title'=>'Edit customer','customer'=>$customer));
+ }
+
+ /** Start a signed, auditable customer-view session without exposing credentials. */
+ public function login_as($id){
+  if($this->input->method()!=='post') show_404();
+  $customer=$this->Bank_model->user_by_id((int)$id,'customer');
+  if(!$customer || $customer['status']!=='active'){
+   $this->session->set_flashdata('error','Only active customer accounts can be opened from the dashboard.');
+   redirect($this->input->server('HTTP_REFERER') ?: 'admin/customers');
+  }
+  $administrator=$this->user;
+  $this->session->sess_regenerate(TRUE);
+  unset($customer['password_hash']);
+  $this->session->set_userdata('user',$customer);
+  $this->session->set_userdata('impersonation_admin',array('id'=>(int)$administrator['id'],'username'=>$administrator['username'],'email'=>$administrator['email'],'first_name'=>$administrator['first_name'],'last_name'=>$administrator['last_name'],'role'=>'admin','created_at'=>$administrator['created_at']));
+  $secret=(string)$this->config->item('auth_secret');
+  $this->session->set_userdata('auth_signature',hash_hmac('sha256',$customer['id'].'|'.$customer['role'].'|'.$customer['created_at'],$secret));
+  $this->Bank_model->audit('admin_impersonation_start','Administrator opened customer #'.$customer['id'].' dashboard as '.$customer['email'],$administrator['id']);
+  redirect('dashboard');
+ }
+
+ /** Update the signed-in administrator's own contact details. */
+ public function profile(){
+  if($this->input->method()==='post'){
+   $this->form_validation->set_rules('first_name','First name','required|trim|max_length[80]');
+   $this->form_validation->set_rules('last_name','Last name','required|trim|max_length[80]');
+   $this->form_validation->set_rules('email','Email','required|valid_email|max_length[190]');
+   $valid=$this->form_validation->run();
+   $email=$this->input->post('email',TRUE);
+   if($valid && !$this->Bank_model->email_available($email,$this->user['id'])){$valid=FALSE;$this->session->set_flashdata('error','That email address is already in use.');}
+   if($valid && $this->Bank_model->update_user_details($this->user['id'],array('first_name'=>$this->input->post('first_name',TRUE),'last_name'=>$this->input->post('last_name',TRUE),'email'=>$email),'admin')){
+    $updated=$this->user;$updated['first_name']=$this->input->post('first_name',TRUE);$updated['last_name']=$this->input->post('last_name',TRUE);$updated['email']=$email;$this->user=$updated;$this->session->set_userdata('user',$updated);
+    $this->Bank_model->audit('admin_profile_updated','Administrator profile updated',$this->user['id']);$this->session->set_flashdata('success','Your profile has been updated.');
+   }elseif(!$this->session->flashdata('error')) $this->session->set_flashdata('error',validation_errors('',' '));
+   redirect('admin/profile');
+  }
+  $profile=$this->Bank_model->user_by_id($this->user['id'],'admin');
+  $this->page('profile',array('title'=>'My profile','profile'=>$profile?:$this->user));
+ }
+
+ /** Change the administrator password from the administrator dashboard. */
+ public function profile_password(){
+  if($this->input->method()!=='post') redirect('admin/profile');
+  $this->form_validation->set_rules('current_password','Current password','required');
+  $this->form_validation->set_rules('new_password','New password','required|min_length[8]');
+  $this->form_validation->set_rules('confirm_new','Confirm password','required|matches[new_password]');
+  if($this->form_validation->run() && $this->Bank_model->change_password($this->user['id'],$this->input->post('current_password'),$this->input->post('new_password'))){
+   $this->Bank_model->audit('admin_password_changed','Administrator password changed',$this->user['id']);$this->session->set_flashdata('success','Your password has been updated.');
+  }else $this->session->set_flashdata('error',validation_errors('',' ') ?: 'Your current password is incorrect.');
+  redirect('admin/profile');
+ }
+
  public function customer_status($id){if($this->input->method()!=='post')show_404();$status=$this->input->post('status',TRUE);if($this->Bank_model->update_customer_status((int)$id,$status)){$this->Bank_model->audit('customer_status','Customer #'.$id.' set to '.$status,$this->user['id']);$this->session->set_flashdata('success','Customer status updated.');}else $this->session->set_flashdata('error','Invalid customer status.');redirect('admin/customers/'.$id);}
  public function customer_adjust($id){if($this->input->method()!=='post')show_404();$this->form_validation->set_rules('account_id','Account','required|integer');$this->form_validation->set_rules('amount','Amount','required|numeric|greater_than[0]');$this->form_validation->set_rules('direction','Direction','required|in_list[credit,debit]');if($this->form_validation->run()){list($ok,$message)=$this->Bank_model->adjust_balance($this->input->post('account_id'),(int)$id,$this->input->post('amount'),$this->input->post('direction',TRUE),$this->input->post('note',TRUE));if($ok){$this->Bank_model->audit('balance_adjustment',$message.' on customer #'.$id,$this->user['id']);$this->session->set_flashdata('success','Balance adjusted. Reference: '.$message);}else $this->session->set_flashdata('error',$message);}else $this->session->set_flashdata('error',validation_errors('',' '));redirect('admin/customers/'.$id);}
  public function transactions(){$q=$this->input->get('q',TRUE);$this->admin_tx_page(NULL,$q,'All transactions','');}

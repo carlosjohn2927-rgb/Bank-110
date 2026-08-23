@@ -1320,3 +1320,41 @@ body.dash-loading .svg-chart-wrap{opacity:.5;pointer-events:none}
 .kyc-badge--rejected{background:#fff0f2;color:#c33d4d}
 
 @media(max-width:900px){.kyc-grid{grid-template-columns:1fr}}
+
+/* Account administration, profile controls and customer-view session */
+.head-actions{display:flex!important;align-items:center;gap:10px;margin-left:8px;white-space:nowrap}
+.head-actions a{font-size:11px;color:#1468e5;font-weight:700}
+.head-actions a+a{color:#6f7e90}
+.page-title-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.page-title-actions .inline-form{display:flex}
+.table-action-form{display:flex;align-items:center;margin:0}
+.btn-small{padding:7px 9px;font-size:9px;white-space:nowrap}
+.customers .muted{font-size:9px;color:#9aa7b6}
+.admin-profile-grid{grid-template-columns:1fr 1fr;align-items:start}
+.admin-profile-grid .settings-form{padding:25px}
+.admin-password-reset{margin-top:24px;padding:17px 0;border-top:1px solid var(--line)}
+.admin-password-reset h3{font:700 14px Manrope;margin:0 0 5px}
+.admin-password-reset p,.edit-help span{font-size:11px;color:#8492a3;line-height:1.5;margin:0 0 8px}
+.edit-help{display:flex;align-items:center;gap:14px;padding:16px 20px;margin-top:17px}
+.edit-help b{font-size:12px;white-space:nowrap}
+.edit-help .outline{margin-left:auto;white-space:nowrap;padding:9px 13px;font-size:11px}
+.impersonation-bar{min-height:42px;background:#fff5dc;border-bottom:1px solid #f1dfad;color:#7c5a16;display:flex;align-items:center;justify-content:center;gap:18px;padding:9px 18px;font-size:12px;position:relative;z-index:11}
+.impersonation-bar a{color:#1468e5;font-weight:800}
+@media(max-width:780px){.head-actions{display:none!important}.admin-profile-grid{grid-template-columns:1fr}.page-title-actions{justify-content:flex-start}.impersonation-bar{justify-content:space-between;gap:8px;font-size:10px}.impersonation-bar a{white-space:nowrap}.edit-help{align-items:flex-start;flex-direction:column}.edit-help .outline{margin-left:0}}
+.customers .tr{grid-template-columns:1.35fr .62fr .7fr .55fr .7fr 62px}
+.row-arrow{font-size:9px;font-weight:800;color:#1468e5;white-space:nowrap}
+
+/* Audit log table: fixed readable columns and wrapped event text. */
+.audit-panel{overflow:hidden}
+.audit-filter{align-items:center}
+.audit-filter .outline{white-space:nowrap}
+.audit-table .tr{grid-template-columns:minmax(145px,1.05fr) minmax(165px,1.2fr) minmax(155px,1.15fr) minmax(300px,2.7fr) minmax(135px,1.1fr);min-width:980px;min-height:72px;height:auto;padding-top:12px;padding-bottom:12px;align-items:start}
+.audit-table .tr.th{min-height:39px;height:39px;align-items:center}
+.audit-table .tr>span{min-width:0}
+.audit-when,.audit-user{display:flex;flex-direction:column;gap:4px}
+.audit-when b,.audit-user b{font-size:11px;color:#26364b}
+.audit-when small,.audit-user small{font-size:10px;color:#8a98a8;line-height:1.3}
+.audit-action{display:inline-block;max-width:100%;padding:5px 8px;border-radius:6px;background:#edf4ff;color:#1468e5;font-size:10px;line-height:1.25;overflow-wrap:anywhere}
+.audit-description{white-space:normal;overflow-wrap:anywhere;color:#526277;font-size:11px;line-height:1.45}
+.audit-table .muted-ip{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;overflow-wrap:anywhere;line-height:1.4}
+.audit-empty{padding:38px 20px;text-align:center;color:#8b99aa;font-size:12px}

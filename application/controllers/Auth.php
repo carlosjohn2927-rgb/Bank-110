@@ -238,6 +238,29 @@ class Auth extends MY_Controller
         $this->load->view('auth/reset', array('token' => $token));
     }
 
+    /** Return to the administrator session after using Login as customer. */
+    public function return_to_admin()
+    {
+        $impersonation = $this->session->userdata('impersonation_admin');
+        if (!$impersonation) {
+            redirect($this->user && ($this->user['role'] ?? '') === 'admin' ? 'admin/dashboard' : 'user/login');
+        }
+        $administrator = $this->Bank_model->user_by_id((int) $impersonation['id'], 'admin');
+        if (!$administrator || $administrator['status'] !== 'active') {
+            $this->session->sess_destroy();
+            redirect('login');
+        }
+        $customer_id = $this->user['id'] ?? 0;
+        $this->Bank_model->audit('admin_impersonation_end', 'Administrator returned from customer #'.$customer_id, $administrator['id']);
+        $this->session->sess_regenerate(TRUE);
+        unset($administrator['password_hash']);
+        $this->session->set_userdata('user', $administrator);
+        $secret=(string)$this->config->item('auth_secret');
+        $this->session->set_userdata('auth_signature',hash_hmac('sha256',$administrator['id'].'|'.$administrator['role'].'|'.$administrator['created_at'],$secret));
+        $this->session->unset_userdata('impersonation_admin');
+        redirect('admin/dashboard');
+    }
+
     public function logout()
     {
         $role = $this->user['role'] ?? 'customer';
