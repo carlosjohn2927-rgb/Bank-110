@@ -227,7 +227,13 @@ class Pdf {
     {
         // Encode to WinAnsi; strip anything that can't be represented safely.
         $s = str_replace(array('\\', '(', ')', "\r", "\n"), array('\\\\', '\(', '\)', ' ', ' '), (string)$s);
-        return utf8_decode($s);
+        if (function_exists('mb_convert_encoding')) {
+            // mb_convert_encoding drops unrepresentable characters instead of
+            // emitting '?' placeholders like utf8_decode() did (deprecated PHP 8.2+).
+            $converted = @mb_convert_encoding($s, 'Windows-1252', 'UTF-8');
+            return ($converted !== FALSE && $converted !== NULL) ? $converted : $s;
+        }
+        return $s; // keep as-is rather than relying on deprecated utf8_decode()
     }
 
     public function output($filename = 'document.pdf', $dest = 'D', $filepath = NULL)

@@ -70,7 +70,7 @@ class Statements extends MY_Controller {
 
     private function account_months($account_id)
     {
-        $rows = $this->db->select("DISTINCT DATE_FORMAT(created_at,'%Y-%m') AS ym", FALSE)
+        $rows = $this->db->select("DISTINCT SUBSTR(created_at,1,7) AS ym", FALSE)
             ->where('account_id', (int)$account_id)
             ->group_by('ym')->order_by('ym', 'DESC')
             ->get('transactions')->result_array();
@@ -94,7 +94,7 @@ class Statements extends MY_Controller {
                $year.'-'.str_pad($month,2,'0',STR_PAD_LEFT).'.pdf';
     }
 
-    private function build_pdf($account, $year, $month)
+    private function build_pdf($account, $year, $month, $path)
     {
         $this->load->library('Pdf');
         $txns = $this->Bank_model->statement_transactions($account['id'], $year, $month);

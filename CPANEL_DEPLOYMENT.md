@@ -12,14 +12,16 @@ This package is designed for deployment without Terminal, SSH, Composer, Node.js
 
 ### 1. Upload the application
 
-1. Open **cPanel → File Manager**.
-2. Open the domain's document root, normally `public_html`, or the document root assigned to a subdomain.
-3. Upload the project folder contents (everything in the repository, including `index.php`, `.htaccess`, `.env`, `application`, `system`, `assets`, `public`, `database`, and `src`).
-4. Move/place the files so `index.php`, `.htaccess`, `.env`, `application`, `system`, `assets`, `public`, and `database` are directly inside the domain's document root—not inside an extra nested folder.
-5. Ensure the top-level files are directly in the document root.
+The repository ships a ready-made deployment package: **`application-deployment.zip`**. It contains exactly what production needs — `index.php`, `.htaccess`, a ready-to-edit `.env`, `.env.example`, `application/`, `system/`, `bootstrap/`, `assets/`, `public/`, `database/production.sql`, and the documentation. Development-only folders (`src/`, `tests/`, Git data) are not included.
+
+1. Download `application-deployment.zip`.
+2. Open **cPanel → File Manager**.
+3. Open the domain's document root, normally `public_html`, or the document root assigned to a subdomain.
+4. Upload `application-deployment.zip` and choose **Extract**.
+5. Make sure `index.php`, `.htaccess`, `.env`, `application`, `system`, `assets`, `public`, and `database` end up directly inside the document root — not inside an extra nested folder. (If extraction creates a subfolder, select all extracted files and use **Move**.)
 6. In File Manager settings, enable **Show Hidden Files (dotfiles)** so `.env` and `.htaccess` are visible.
 
-No dependency installation is needed. CodeIgniter and all production assets are included.
+No dependency installation is needed. CodeIgniter and all production assets are included — no Composer, npm, or build step.
 
 ### 2. Create the database
 
@@ -77,6 +79,9 @@ assets/logs/sessions/
 assets/logs/cache/
 assets/logs/ratelimit/
 assets/uploads/
+assets/uploads/checks/
+assets/statements/
+application/cache/
 ```
 
 If the application reports that one is not writable, select it in File Manager, choose **Change Permissions**, and use `0755`. On hosts using a different PHP ownership model, use `0775` only for the affected folder. Never use `0777` unless your hosting provider explicitly requires it. No `chmod` or `chown` command is needed.
@@ -101,18 +106,35 @@ The customer login first displays the image-style verification code.
 
 ## Initial accounts
 
+Both accounts are created by `database/production.sql` — no Terminal command is needed to create an administrator.
+
 ### Administrator
 
 - Identity: `northadmin`
 - Alternate identity: `admin@northwest.financeltd.org`
-- Password: the administrator password supplied for this project
+- Password: `Admin@12345`
+
+**Change this password immediately after the first sign-in** (Admin → profile, or Settings for the customer-equivalent flow), before the site is used with real customers.
 
 ### Demonstration customer
 
 - Identity: `james.davidson@example.com`
 - Password: `Demo@12345`
 
-Immediately change production account credentials and remove demonstration data that is not required for the live installation.
+Remove demonstration customers and demo data that is not required for the live installation.
+
+### Resetting the administrator password without Terminal
+
+If the administrator password is ever lost, reset it using only phpMyAdmin:
+
+1. Open an online bcrypt hash generator (for example any "bcrypt generator" website) and hash a new password of your choice (cost 12 produces a `$2y$…` string).
+2. Open **cPanel → phpMyAdmin**, select the application database, choose the **SQL** tab, and run:
+
+```sql
+UPDATE users SET password_hash = 'PASTE_THE_NEW_$2y$_HASH_HERE' WHERE username = 'northadmin';
+```
+
+3. Sign in again with the new password.
 
 ## Moving an existing installation
 
@@ -138,6 +160,15 @@ In cPanel **MultiPHP Manager**, select PHP 8.2 or newer. In **Select PHP Version
 
 ## Complete normal deployment workflow
 
-**Upload and extract files → Create database and user → Import `database/production.sql` → Edit `.env` → Open website.**
+**Upload and extract `application-deployment.zip` → Create database and user → Import `database/production.sql` → Edit `.env` → Open website.**
 
 No Terminal operation is part of installation, migration, or deployment.
+
+## Optional: scheduled transfers cron
+
+Scheduled transfers and exchange-rate snapshots are processed by an HTTP endpoint, so it can be triggered from cPanel **Terminal-free** using the Cron Jobs UI (or any external uptime service):
+
+- URL: `https://yourdomain.com/scheduler/run?key=YOUR_VP_SCHEDULER_KEY`
+- Suggested frequency: every 5–15 minutes
+
+`VP_SCHEDULER_KEY` is set in `.env`. Requests without the correct key are rejected with 403.

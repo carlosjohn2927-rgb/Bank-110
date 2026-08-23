@@ -26,3 +26,6 @@ image-search/
 
 # Local environment (contains secrets — use .env.example as the template)
 .env
+
+# Stray env template with possible real credentials (use .env instead)
+env

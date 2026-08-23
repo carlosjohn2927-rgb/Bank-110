@@ -6,13 +6,13 @@ A complete traditional PHP MVC banking application built with **CodeIgniter 3.1.
 
 Normal installation requires only:
 
-1. Upload the project folder (everything in this repository) in cPanel File Manager.
+1. Upload **`application-deployment.zip`** in cPanel File Manager and extract it into the domain's document root.
 2. Create a database and user in cPanel MySQL Databases.
 3. Import `database/production.sql` through phpMyAdmin.
 4. Edit `.env` with the domain, database credentials, and preserved secrets.
 5. Open the website.
 
-There is no installer, migration command, seed command, admin-creation command, Composer installation, Node.js build, npm installation, Docker step, Terminal, or SSH requirement.
+There is no installer, migration command, seed command, admin-creation command, Composer installation, Node.js build, npm installation, Docker step, Terminal, or SSH requirement. The administrator account (`northadmin` / `Admin@12345` — change immediately) and the demo customer (`james.davidson@example.com` / `Demo@12345`) are both included in `production.sql`.
 
 See **[CPANEL_DEPLOYMENT.md](CPANEL_DEPLOYMENT.md)** for the complete click-by-click guide, writable-directory instructions, initial account details, migration guidance, and cPanel troubleshooting.
 

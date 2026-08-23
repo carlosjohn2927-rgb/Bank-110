@@ -31,7 +31,18 @@ class Setup extends CI_Controller
         if ($db_ok) {
             $required = array('users','accounts','transactions','transfers','cards','loans','beneficiaries','support_tickets','settings','audit_logs','customer_profiles','password_resets','user_preferences','exchange_rates');
             $have = array();
-            try { $rows = $this->db->query('SHOW TABLES')->result_array(); foreach($rows as $r) $have[] = reset($r); } catch (Exception $e) {}
+            // List tables in a driver-aware way; never fatal when the catalog cannot be read.
+            $prev_debug = $this->db->db_debug;
+            $this->db->db_debug = FALSE;
+            if ($this->db->dbdriver === 'mysqli') {
+                $rows = $this->db->query('SHOW TABLES');
+                $rows = ($rows === FALSE) ? array() : $rows->result_array();
+            } else {
+                $rows = $this->db->query("SELECT name FROM sqlite_master WHERE type='table'");
+                $rows = ($rows === FALSE) ? array() : $rows->result_array();
+            }
+            $this->db->db_debug = $prev_debug;
+            foreach ($rows as $r) $have[] = reset($r);
             $have = array_map('strtolower', $have);
             $missing_tables = array_diff($required, $have);
             $tables_ok = empty($missing_tables);
@@ -43,7 +54,7 @@ class Setup extends CI_Controller
         }
 
         // 3) Writable directories
-        $writable = array('assets/logs','assets/logs/cache','assets/logs/sessions','assets/uploads');
+        $writable = array('assets/logs','assets/logs/cache','assets/logs/sessions','assets/logs/ratelimit','assets/uploads','assets/uploads/checks','assets/statements','application/cache');
         foreach ($writable as $dir) {
             $path = FCPATH.$dir;
             $ok = is_dir($path) && is_writable($path);
