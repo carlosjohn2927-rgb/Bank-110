@@ -10,6 +10,10 @@ class Auth extends MY_Controller
     {
         if ($this->user) redirect($this->user['role'] === 'admin' ? 'admin/dashboard' : 'dashboard');
         if ($this->input->method() === 'post') {
+            if (!$this->db_ok()) {
+                $this->session->set_flashdata('error', 'Our services are temporarily unavailable. Please try again shortly.');
+                redirect('login');
+            }
             $this->form_validation->set_rules('identity', 'Email or username', 'required|trim');
             $this->form_validation->set_rules('password', 'Password', 'required');
             if ($this->form_validation->run()) {
@@ -60,6 +64,10 @@ class Auth extends MY_Controller
     public function customer_login()
     {
         if (!$this->session->userdata('captcha_verified')) redirect('user/login');
+        if (!$this->db_ok()) {
+            $this->session->set_flashdata('error', 'Our services are temporarily unavailable. Please try again shortly.');
+            redirect('user/login?credentials=1');
+        }
         $this->form_validation->set_rules('identity', 'Account number or email', 'required|trim');
         $this->form_validation->set_rules('password', 'Password', 'required');
         if (!$this->form_validation->run()) { $this->session->set_flashdata('error', validation_errors('',' ')); redirect('user/login?credentials=1'); }
@@ -83,6 +91,10 @@ class Auth extends MY_Controller
         $pending = $this->session->userdata('twofa_pending');
         if (!$pending || empty($pending['user'])) redirect('user/login');
         if ($this->input->method() === 'post') {
+            if (!$this->db_ok()) {
+                $this->session->set_flashdata('error', 'Our services are temporarily unavailable. Please try again shortly.');
+                redirect('twofa');
+            }
             $code = trim((string) $this->input->post('code', TRUE));
             $user = $pending['user'];
             $verified = FALSE;
@@ -181,6 +193,10 @@ class Auth extends MY_Controller
     {
         if ($this->user) redirect($this->user['role'] === 'admin' ? 'admin/dashboard' : 'dashboard');
         if ($this->input->method() === 'post') {
+            if (!$this->db_ok()) {
+                $this->session->set_flashdata('error', 'Our services are temporarily unavailable. Please try again shortly.');
+                redirect('forgot');
+            }
             $this->form_validation->set_rules('email','Email','required|valid_email');
             if ($this->form_validation->run()) {
                 $token = $this->Bank_model->create_password_reset($this->input->post('email', TRUE));
@@ -204,6 +220,10 @@ class Auth extends MY_Controller
         if ($this->user) redirect('dashboard');
         if (!$token) redirect('forgot');
         if ($this->input->method() === 'post') {
+            if (!$this->db_ok()) {
+                $this->session->set_flashdata('error', 'Our services are temporarily unavailable. Please try again shortly.');
+                redirect('reset/'.$token);
+            }
             $this->form_validation->set_rules('password','New password','required|min_length[8]');
             $this->form_validation->set_rules('confirm','Confirm password','required|matches[password]');
             if ($this->form_validation->run() && $this->Bank_model->complete_password_reset($token, $this->input->post('password'))) {

@@ -1,7 +1,25 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-$config['base_url'] = rtrim(getenv('VP_BASE_URL') ?: '', '/').'/';
+/*
+ * Base URL. VP_BASE_URL from .env wins. If it is missing or still the
+ * "yourdomain" placeholder, auto-detect from the incoming request so the site
+ * renders with correct absolute asset/link URLs even before .env is configured
+ * (otherwise every page after "/" gets broken relative asset paths).
+ */
+$vp_base_url = rtrim((string) (getenv('VP_BASE_URL') ?: ''), '/');
+if ($vp_base_url === '' || stripos($vp_base_url, 'yourdomain') !== FALSE)
+{
+	$auto_scheme = ((!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off')
+		|| (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+		|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https'))
+		? 'https' : 'http';
+	$auto_host = (isset($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] !== '')
+		? $_SERVER['HTTP_HOST']
+		: (isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : 'localhost');
+	$vp_base_url = $auto_scheme.'://'.$auto_host;
+}
+$config['base_url'] = $vp_base_url.'/';
 $config['index_page'] = '';
 $config['uri_protocol'] = 'REQUEST_URI';
 $config['url_suffix'] = '';

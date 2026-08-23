@@ -29,7 +29,7 @@ function notify_user($user_id, $subject, $content, $required_pref = 'email_alert
         $user = $CI->Bank_model->profile((int)$user_id);
         if (empty($user['email'])) return FALSE;
         return send_notification_email($user['email'], $subject, $content);
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         return FALSE;
     }
 }
@@ -68,7 +68,7 @@ function notification_template_wrap($subject, $content)
         $CI =& get_instance();
         $settings = $CI->Bank_model->settings();
         if (!empty($settings['institution_name'])) $institution = $settings['institution_name'];
-    } catch (Exception $e) {}
+    } catch (\Throwable $e) {}
     return '<div style="font-family:Arial,Helvetica,sans-serif;background:#f2f5f9;padding:28px 16px">'
         .'<div style="max-width:560px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e3eaf2">'
         .'<div style="background:linear-gradient(120deg,#081f3d,#0e4d8f);padding:22px 26px;color:#fff">'

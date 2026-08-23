@@ -4,6 +4,7 @@ class Register extends MY_Controller {
  public function __construct(){parent::__construct();if($this->user)redirect('dashboard');}
  public function index(){
   if($this->input->method()==='post'){
+   if(!$this->db_ok()){$this->session->set_flashdata('error','Our services are temporarily unavailable. Please try again shortly.');redirect('register');}
    if(!$this->registration_open()){$this->session->set_flashdata('error','Online registration is currently disabled. Please contact support.');redirect('register');}
    $this->form_validation->set_rules('first_name','First name','required|trim|max_length[80]');
    $this->form_validation->set_rules('last_name','Last name','required|trim|max_length[80]');

@@ -53,7 +53,7 @@ class Site_operator_engine
     protected function buildContext($context, $user)
     {
         $settings = array();
-        try { $settings = $this->CI->Bank_model->settings(); } catch (Exception $e) {}
+        try { $settings = $this->CI->Bank_model->settings(); } catch (\Throwable $e) {}
 
         if (!isset($context['institutionName']))    $context['institutionName']    = $settings['institution_name'] ?? 'NorthWest Financial Ltd.';
         if (!isset($context['supportEmail']))       $context['supportEmail']       = $settings['support_email'] ?? 'support@northwest';
@@ -85,7 +85,7 @@ class Site_operator_engine
                     $context['spendingBreakdown'] = method_exists($this->CI->Bank_model, 'spending_breakdown')
                         ? $this->CI->Bank_model->spending_breakdown($uid, 5) : array();
                 }
-            } catch (Exception $e) {}
+            } catch (\Throwable $e) {}
         } else {
             $context['accounts']     = isset($context['accounts']) ? $context['accounts'] : array();
             $context['transactions'] = isset($context['transactions']) ? $context['transactions'] : array();

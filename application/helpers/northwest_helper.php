@@ -34,7 +34,7 @@ function site_seo()
     $CI =& get_instance();
     $settings = array();
     if (isset($CI->Bank_model)) {
-        try { $settings = $CI->Bank_model->settings(); } catch (Exception $e) {}
+        try { $settings = $CI->Bank_model->settings(); } catch (\Throwable $e) {}
     }
     $CI->config->load('seo', TRUE);
     $seo = $CI->config->item('seo') ?: array();
@@ -96,7 +96,7 @@ function site_announcement()
     $CI =& get_instance();
     $settings = array();
     if (isset($CI->Bank_model)) {
-        try { $settings = $CI->Bank_model->settings(); } catch (Exception $e) {}
+        try { $settings = $CI->Bank_model->settings(); } catch (\Throwable $e) {}
     }
     if (isset($settings['announcement_text']) && $settings['announcement_text'] !== '') {
         return $settings['announcement_text'];
