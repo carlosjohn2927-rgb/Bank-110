@@ -1,6 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NorthWest Financial">
-  <rect width="64" height="64" rx="14" fill="#071c35"/>
-  <path d="M14 46V19l18 27V19h7v27L21 19v27z" fill="#fff"/>
-  <path d="M42 18h8L39 46h-8z" fill="#4f9cff"/>
-  <circle cx="49" cy="17" r="4" fill="#4f9cff"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#071c35"/>
+      <stop offset="100%" stop-color="#0d3a6b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4f9cff"/>
+      <stop offset="100%" stop-color="#1680e8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- N letterform -->
+  <path d="M10 46V18l12 28V18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- W letterform with upward chart accent -->
+  <path d="M30 46l5-18 5 12 5-18 5 24" fill="none" stroke="url(#accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Subtle dot accent -->
+  <circle cx="52" cy="17" r="3" fill="#4f9cff" opacity="0.9"/>
 </svg>
