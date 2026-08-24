@@ -1,0 +1,22 @@
+{
+  "name": "NorthWest Financial",
+  "short_name": "NorthWest",
+  "description": "Secure online banking from NorthWest Financial.",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#071c35",
+  "background_color": "#071c35",
+  "display": "standalone"
+}

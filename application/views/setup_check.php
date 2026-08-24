@@ -15,6 +15,8 @@ p.sub{color:#718095;margin:0 0 20px;font-size:13px}
 .foot{margin-top:18px;font-size:11px;color:#98a5b6}
 </style><link rel="icon" href="<?=base_url('public/favicon.svg')?>" type="image/svg+xml">
 <link rel="alternate icon" href="<?=base_url('public/favicon.ico')?>" sizes="any">
+<link rel="manifest" href="<?=base_url('public/site.webmanifest')?>">
+<link rel="apple-touch-icon" href="<?=base_url('public/favicon.png')?>">
 </head><body><div class="card">
 <h1>Installation check</h1>
 <p class="sub">Verifies that NorthWest is fully installed and configured.</p>
