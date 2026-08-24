@@ -54,6 +54,41 @@ Any DB exception bubbled up as 500.
 **Fix:**
 - Wrapped login flows in try/catch, log error, show friendly "temporarily unavailable" flash message.
 
+### 8. Empty SQLite dev database — "Our services are temporarily unavailable" on login (local/dev)
+When no `.env` is present, `bootstrap/env.php` falls back to `.env.example`, which
+sets `CI_ENV=development` and `VP_DB_DRIVER=sqlite`. CodeIgniter's PDO driver
+silently auto-creates the file `application/cache/production.sqlite`, but that
+file is **empty — zero tables**. `MY_Controller::db_ok()` then runs
+`SELECT 1 FROM users LIMIT 1`, which fails, so every login POST is redirected
+back with the flash message **"Our services are temporarily unavailable. Please
+try again shortly."** (the exact symptom reported on a fresh checkout).
+
+The bundled `database/production.sql` is MySQL/MariaDB-only (`ENGINE=InnoDB`,
+`AUTO_INCREMENT`, `ON DUPLICATE KEY UPDATE`, `ENUM(...)`, `NOW()`) and cannot be
+loaded into SQLite, so there was previously no way to seed the local SQLite
+database without manually converting the schema.
+
+**Fix:**
+- Added `database/sqlite_schema.sql` — a SQLite-native port of the full schema
+  plus the same demo seed data (admin `northadmin` / `Admin@12345`, customer
+  `james.davidson@example.com` / `Demo@12345`).
+- In `application/config/database.php`, before the PDO DSN is handed to
+  CodeIgniter, two helpers run:
+  - `northwest_sqlite_needs_init($path)` — returns TRUE when the file is
+    missing/empty or has no `users` table.
+  - `northwest_sqlite_init($path)` — opens the file with raw PDO, wraps the
+    schema load in a transaction, and commits. Errors are logged, never fatal.
+- Relative `VP_SQLITE_PATH` values are now resolved against `FCPATH` so the
+  database always lands in a known writable directory regardless of the PHP
+  process's working directory.
+- This code path is reached **only** for the `sqlite`/`pdo_sqlite` driver;
+  cPanel MySQL production continues to import `database/production.sql` via
+  phpMyAdmin and is unaffected.
+
+**Result:** on a fresh clone with no `.env`, the first request to `/login` or
+`/user/login` creates and seeds `application/cache/production.sqlite`
+automatically; `db_ok()` then passes and sign-in works immediately.
+
 ## What to do on halykpetroleum-kz.com cPanel
 
 1. **Check `.env` exists and has MySQL credentials:**

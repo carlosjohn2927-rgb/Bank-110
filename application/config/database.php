@@ -44,12 +44,81 @@ if ($vp_db_driver === 'sqlite' || $vp_db_driver === 'pdo_sqlite')
     if ($vp_sqlite_path === '') {
         $vp_sqlite_path = FCPATH.'application/cache/production.sqlite';
     }
+    // Resolve relative paths against the application front-controller directory
+    // so the file is always created in a known, writable location regardless of
+    // the PHP process's current working directory.
+    if (!preg_match('#^([A-Za-z]:[\\\\/]|/)#', $vp_sqlite_path)) {
+        $vp_sqlite_path = FCPATH.ltrim($vp_sqlite_path, '/\\');
+    }
     $vp_sqlite_path = str_replace('\\', '/', $vp_sqlite_path);
 
     // Ensure the directory for the sqlite file exists to avoid PDO creation failure
     $sqlite_dir = dirname($vp_sqlite_path);
     if (!is_dir($sqlite_dir)) {
         @mkdir($sqlite_dir, 0755, TRUE);
+    }
+
+    // Auto-initialize the SQLite database from the bundled schema when it is
+    // missing or empty (no `users` table). Without this, PDO silently creates an
+    // empty file on first connect, every query fails, and login shows the
+    // "Our services are temporarily unavailable" message. This runs only for
+    // the portable sqlite driver (cPanel/MySQL production uses production.sql).
+    if (!function_exists('northwest_sqlite_needs_init')) {
+        function northwest_sqlite_needs_init($path)
+        {
+            if (!file_exists($path) || filesize($path) === 0) {
+                return TRUE;
+            }
+            try {
+                $probe = new PDO('sqlite:'.$path);
+                $probe->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $row = $probe->query("SELECT 1 FROM sqlite_master WHERE type='table' AND name='users'")->fetchColumn();
+                $probe = NULL;
+                return $row === FALSE;
+            } catch (\Throwable $e) {
+                return TRUE;
+            }
+        }
+    }
+    if (!function_exists('northwest_sqlite_init')) {
+        function northwest_sqlite_init($path)
+        {
+            $schema = dirname(__DIR__, 2).'/database/sqlite_schema.sql';
+            if (!is_readable($schema)) {
+                if (function_exists('log_message')) {
+                    log_message('error', 'SQLite init: schema file not readable at '.$schema);
+                }
+                return FALSE;
+            }
+            $sql = file_get_contents($schema);
+            if ($sql === FALSE || trim($sql) === '') {
+                return FALSE;
+            }
+            try {
+                $pdo = new PDO('sqlite:'.$path);
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $pdo->exec('PRAGMA foreign_keys = ON');
+                $pdo->beginTransaction();
+                $pdo->exec($sql);
+                $pdo->commit();
+                $pdo = NULL;
+                if (function_exists('log_message')) {
+                    log_message('info', 'SQLite database initialized from sqlite_schema.sql at '.$path);
+                }
+                return TRUE;
+            } catch (\Throwable $e) {
+                if (isset($pdo) && $pdo && $pdo->inTransaction()) {
+                    try { $pdo->rollBack(); } catch (\Throwable $re) {}
+                }
+                if (function_exists('log_message')) {
+                    log_message('error', 'SQLite init failed: '.$e->getMessage());
+                }
+                return FALSE;
+            }
+        }
+    }
+    if (northwest_sqlite_needs_init($vp_sqlite_path)) {
+        northwest_sqlite_init($vp_sqlite_path);
     }
 
     $db['default'] = array(
