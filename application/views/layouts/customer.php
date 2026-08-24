@@ -1,5 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#071c35"><title><?=html_escape(($title ?? '').' · NorthWest Financial')?></title><?=render_seo_meta($title ?? '')?><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"><link rel="icon" href="<?=base_url('public/favicon.svg')?>" type="image/svg+xml">
 <link rel="alternate icon" href="<?=base_url('public/favicon.ico')?>" sizes="any">
+<link rel="manifest" href="<?=base_url('public/site.webmanifest')?>">
+<link rel="apple-touch-icon" href="<?=base_url('public/favicon.png')?>">
 <link rel="stylesheet" href="<?=base_url('public/css/app.css')?>"></head><body data-notif-read-url="<?=site_url('notifications/read/')?>">
 <?=render_announcement()?><?php if($impersonating):?><div class="impersonation-bar"><span>Viewing customer dashboard as <b><?=html_escape($current_user['first_name'].' '.$current_user['last_name'])?></b></span><a href="<?=site_url('admin/return')?>">← Return to admin dashboard</a></div><?php endif?>
 <div class="shell"><aside id="sidebar"><a class="brand brand-light" href="<?=site_url('dashboard')?>"><i><b></b><b></b><b></b></i>North<span>West</span></a><small class="nav-label"><?=strtoupper(tl('nav_personal'))?></small><nav>
