@@ -10,13 +10,21 @@
       "purpose": "any"
     },
     {
-      "src": "favicon.png",
+      "src": "favicon-new.png",
       "sizes": "64x64",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "theme_color": "#071c35",
   "background_color": "#071c35",
-  "display": "standalone"
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
 }

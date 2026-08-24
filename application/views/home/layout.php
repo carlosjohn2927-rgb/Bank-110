@@ -34,7 +34,6 @@
     </nav>
     <div class="home-nav__cta">
       <?=render_language_switcher('lang-switch home-lang')?>
-      <a class="link-btn" href="<?=site_url('login')?>">Admin</a>
       <a class="btn btn-sm" href="<?=site_url('user/login')?>">Sign in</a>
     </div>
   </div>
@@ -63,7 +62,6 @@
         <a href="<?=site_url('security-center')?>">Security</a>
         <a href="<?=site_url('branches')?>">Branches &amp; ATMs</a>
         <a href="<?=site_url('fees')?>">Fees &amp; pricing</a>
-        <a href="<?=site_url('login')?>">Staff login</a>
       </div>
       <div><h4>Support</h4>
         <a href="<?=site_url('help')?>">Help center / FAQ</a>

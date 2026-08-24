@@ -5,9 +5,16 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * Key = CodeIgniter language folder name, value = display label.
  */
 $config['available_languages'] = array(
-    'english' => 'English',
-    'german'  => 'Deutsch',
-    'french'  => 'Français',
+    'english'    => 'English',
+    'german'     => 'Deutsch',
+    'french'     => 'Français',
+    'spanish'    => 'Español',
+    'russian'    => 'Русский',
+    'portuguese' => 'Português',
+    'chinese'    => '中文',
+    'arabic'     => 'العربية',
+    'turkish'    => 'Türkçe',
+    'kazakh'     => 'Қазақша',
 );
 
 /** The default language when no preference is set. */

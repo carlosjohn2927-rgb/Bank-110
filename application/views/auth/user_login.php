@@ -18,7 +18,7 @@
   <div class="auth-top">
     <?=render_language_switcher('lang-switch auth-lang')?>
     <a class="brand" href="<?=site_url('/')?>"><i><b></b><b></b><b></b></i>North<span>West</span></a>
-    <a href="<?=site_url('login')?>">Administrator login ›</a>
+    <a href="<?=site_url('/')?>">← Back to home</a>
   </div>
   <div class="auth-card">
     <em>ONLINE BANKING</em>
@@ -49,7 +49,7 @@
     <?php endif ?>
     <div class="security-note">✓ <span><b>Your security matters</b><br>Industry-standard encryption protects your information.</span></div>
   </div>
-  <footer>© 2026 NorthWest Financial Ltd. · <a href="<?=site_url('/')?>">Home</a> · <a href="<?=site_url('login')?>">Admin</a></footer>
+  <footer>© 2026 NorthWest Financial Ltd. · <a href="<?=site_url('/')?>">Home</a> · <a href="<?=site_url('forgot')?>">Forgot password?</a></footer>
 </section>
 <aside class="auth-image">
   <div>

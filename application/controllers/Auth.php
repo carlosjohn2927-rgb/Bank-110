@@ -17,17 +17,26 @@ class Auth extends MY_Controller
             $this->form_validation->set_rules('identity', 'Email or username', 'required|trim');
             $this->form_validation->set_rules('password', 'Password', 'required');
             if ($this->form_validation->run()) {
-                $key = 'admin:'.($this->input->post('identity', TRUE));
+                $identity = trim((string) $this->input->post('identity', TRUE));
+                $password = (string) $this->input->post('password');
+                $key = 'admin:'.$identity;
                 try {
                     if ($this->Bank_model->login_attempts($key) >= 5) {
                         $this->session->set_flashdata('error', 'Too many failed attempts. Please try again in 15 minutes.');
                         redirect('login');
                     }
-                    $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'admin');
+                    $user = $this->Bank_model->authenticate($identity, $password, 'admin');
                     if ($user) {
                         $this->Bank_model->clear_login_attempts($key);
                         $this->establish_session($user);
                         redirect('admin/dashboard');
+                    }
+                    // Also check if the credentials belong to a customer — allow dual login
+                    $customer = $this->Bank_model->authenticate($identity, $password, 'customer');
+                    if ($customer) {
+                        $this->Bank_model->clear_login_attempts('customer:'.$identity);
+                        $this->establish_session($customer);
+                        redirect('dashboard');
                     }
                     $this->Bank_model->record_login_attempt($key, FALSE);
                 } catch (\Throwable $e) {
@@ -35,7 +44,7 @@ class Auth extends MY_Controller
                     $this->session->set_flashdata('error', 'Our services are temporarily unavailable. Please try again shortly.');
                     redirect('login');
                 }
-                $this->session->set_flashdata('error', 'Invalid administrator credentials.');
+                $this->session->set_flashdata('error', 'Invalid credentials. Please check your email/username and password.');
             } else {
                 $this->session->set_flashdata('error', validation_errors(' ', ' '));
             }
@@ -109,7 +118,18 @@ class Auth extends MY_Controller
         $key='customer:'.($this->input->post('identity',TRUE));
         try {
             if($this->Bank_model->login_attempts($key)>=5){$this->session->set_flashdata('error','Too many failed attempts. Please try again in 15 minutes.');redirect('user/login?credentials=1');}
-            $user = $this->Bank_model->authenticate($this->input->post('identity', TRUE), $this->input->post('password'), 'customer');
+            $identity = trim((string) $this->input->post('identity', TRUE));
+            $password = (string) $this->input->post('password');
+            $user = $this->Bank_model->authenticate($identity, $password, 'customer');
+            // If customer auth fails, also try admin credentials
+            if (!$user) {
+                $admin = $this->Bank_model->authenticate($identity, $password, 'admin');
+                if ($admin) {
+                    $this->Bank_model->clear_login_attempts('admin:'.$identity);
+                    $this->establish_session($admin);
+                    redirect('admin/dashboard');
+                }
+            }
             if (!$user) { $this->Bank_model->record_login_attempt($key,FALSE); $this->session->set_flashdata('error', 'Invalid login details or inactive account.'); redirect('user/login?credentials=1'); }
             $this->Bank_model->clear_login_attempts($key);
             // Two-factor authentication: if enabled, pause sign-in for a code.
